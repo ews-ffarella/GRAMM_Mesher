@@ -1,0 +1,107 @@
+{
+    "[python]": {
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+      },
+      "editor.formatOnPaste": false,
+      "editor.formatOnSave": true,
+      "editor.formatOnType": false
+    },
+    "autoDocstring.customTemplatePath": "docString.mustache",
+    "code-runner.showExecutionMessage": true,
+    "explorer.sortOrder": "type",
+    "files.eol": "\n",
+    "files.exclude": {
+      "**/*.egg-info": true,
+      "**/*.whl": true,
+      "**/*~": true,
+      "**/.DS_Store": true,
+      "**/.git": true,
+      "**/.hg": true,
+      "**/.mypy_cache/**": true,
+      "**/.pyc": true,
+      "**/.pytest_cache": true,
+      "**/.svn": true,
+      "**/CVS": true,
+      "**/__pycache__": true,
+      "**/htmlcov/**/*": true,
+      "*.venv": true,
+      "site.zip": true,
+      "site/**/*": true,
+      "**/*.wnd": true,
+      "**/*.scl": true
+    },
+    "files.trimFinalNewlines": true,
+    "files.watcherExclude": {
+      "**/*.egg-info": true,
+      "**/*.whl": true,
+      "**/*~": true,
+      "**/.DS_Store": true,
+      "**/.git": true,
+      "**/.hg": true,
+      "**/.mypy_cache/**": true,
+      "**/.pyc": true,
+      "**/.pytest_cache": true,
+      "**/.svn": true,
+      "**/CVS": true,
+      "**/__pycache__": true,
+      "**/htmlcov/**/*": true,
+      "site.zip": true,
+      "site/**/*": true,
+      "**/*.wnd": true,
+      "**/*.scl": true,
+      "**/*.asc": true
+    },
+    "gitlens.blame.line.enabled": false,
+    "gitlens.codeLens.authors.enabled": false,
+    "gitlens.codeLens.recentChange.enabled": false,
+    "markdownlint.config": {
+      "MD003": {
+        "style": "atx"
+      },
+      "MD007": {
+        "indent": 4
+      },
+      "MD025": false,
+      "default": true,
+      "no-hard-tabs": false
+    },
+    "python.formatting.provider": "black",
+    "python.languageServer": "Microsoft",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.pythonPath": "D:\\GitLab\\software\\miniconda3\\envs\\python37\\python.exe",
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestArgs": [
+      "tests"
+    ],
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "search.exclude": {
+      "**/*.egg-info": true,
+      "**/*.whl": true,
+      "**/*~": true,
+      "**/.DS_Store": true,
+      "**/.git": true,
+      "**/.hg": true,
+      "**/.mypy_cache/**": true,
+      "**/.pyc": true,
+      "**/.pytest_cache": true,
+      "**/.svn": true,
+      "**/CVS": true,
+      "**/__pycache__": true,
+      "**/htmlcov/**/*": true,
+      "site.zip": true,
+      "site/**/*": true,
+      "**/*.wnd": true,
+      "**/*.scl": true,
+      "**/*.asc": true
+    },
+    "terminal.integrated.automationShell.windows": "cmd.exe",
+    "terminal.integrated.shell.windows": "cmd.exe",
+    "terminal.integrated.shellArgs.windows": [
+      "/K",
+      "conda.bat activate python37"
+    ]
+  }
