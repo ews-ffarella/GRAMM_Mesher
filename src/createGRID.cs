@@ -31,6 +31,25 @@ namespace Mesh
         /// <summary>
         /// Generates the ggeom.asc file
         /// </summary> 
+
+        private static double Lerp(double s, double e, double t)
+        {
+            return s + (e - s) * t;
+        }
+        private static double Blerp(double c00, double c10, double c01, double c11, double tx, double ty)
+        {
+            return Lerp(Lerp(c00, c10, tx), Lerp(c01, c11, tx), ty);
+        }
+        private static T[] CreateArray<T>(int cnt, Func<T> itemCreator)
+        {
+            T[] result = new T[cnt];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = itemCreator();
+            }
+            return result;
+        }
+
         public bool GenerateGgeomFile()
         {
             float[][] ADH;
@@ -41,7 +60,7 @@ namespace Mesh
             double xsimin = Program.GrammDomRect.West;
             double xsimax = Program.GrammDomRect.East;
             double etamin = Program.GrammDomRect.South;
-            double etamax = Program.GrammDomRect.North; 
+            double etamax = Program.GrammDomRect.North;
             Int32 SmoothBorderCellNr = Program.SmoothBorderCellNr;
             double ADZ = Program.ADZ;
             double DDZ = Program.DDZ;
@@ -56,6 +75,9 @@ namespace Mesh
             int NXY = NX * NY;  //number of cells in a horizontal layer
             int NXYZ = NX * NY * NZ; //total number of cells
             int NNNS = 4 * NXY;
+
+            // double[][] AH = CreateArray<double[]>(NX1, () => new double[NY1]);
+
 
             double[] XKO = new double[NX2];  //x-coordinates of cells
             double[] YKO = new double[NY2];  //y-coordinates of cells
@@ -136,6 +158,12 @@ namespace Mesh
             text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
             NODDATA = Convert.ToDouble(text[1].Replace(".", decsep));  //no-data value
 
+            // Data is shifted to CELL CENTERS
+            ILIUN = ILIUN + 0.5 * ICSIZE;
+            JLIUN = JLIUN + 0.5 * ICSIZE;
+            Console.WriteLine("ILIUN:" + ILIUN);
+            Console.WriteLine("JLIUN:" + JLIUN);
+
             int IMODI = Convert.ToInt32((xsimax - xsimin) / NX);
             int I1 = Convert.ToInt32(xsimin);
             int J1 = Convert.ToInt32(etamin);
@@ -146,13 +174,11 @@ namespace Mesh
 
             if (Convert.ToInt32(ILANG / IMODI) > NX)
             {
-                Console.WriteLine("Number of cells in x-direction to small");
-                return false;
+                throw new Exception("Number of cells in x-direction to small");
             }
             if (Convert.ToInt32(JLANG / IMODI) > NY)
             {
-                Console.WriteLine("Number of cells in y-direction to small");
-                return false;
+                throw new Exception("Number of cells in y-direction to small");
             }
 
             //computation of the corner points of the domain
@@ -168,26 +194,23 @@ namespace Mesh
             //check, if domain fits within selected topography file
             if (Math.Min(Math.Min(I1, I2), Math.Min(I3, I4)) < ILIUN)
             {
-                Console.WriteLine("Selected area is to far in the west");
-                return false;
+                throw new Exception("Selected area is to far in the west");
             }
             if (Math.Max(Math.Max(I1, I2), Math.Max(I3, I4)) > ILIUN + ICSIZE * NCOL)
             {
-                Console.WriteLine("Selected area is to far in the east");
-                return false;
+                throw new Exception("Selected area is to far in the east");
             }
             if (Math.Min(Math.Min(J1, J2), Math.Min(J3, J4)) < JLIUN)
             {
-                Console.WriteLine("Selected area is to far in the south");
-                return false;
+                throw new Exception("Selected area is to far in the south");
             }
             if (Math.Max(Math.Max(J1, J2), Math.Max(J3, J4)) > JLIUN + ICSIZE * NROW)
             {
-                Console.WriteLine("Selected area is to far in the north");
-                return false;
+                throw new Exception("Selected area is to far in the north");
             }
 
             //reading topography
+            double VALSMIN = 10000;
             double AHMIN = 10000;
             double AHMAX = -10000;
             double AHMIN_BORDER = 10000;
@@ -202,8 +225,7 @@ namespace Mesh
                 reader.Close();
                 reader.Dispose();
                 sizeOK = false;
-                Console.WriteLine("Topography file is too large. Exeeding available memory space of this computer");
-                return false;
+                throw new Exception("Topography file is too large. Exeeding available memory space of this computer");
             }
             if (sizeOK == true)
             {
@@ -220,7 +242,7 @@ namespace Mesh
 
                     if (i % 40 == 0)
                     {
-                        Console.WriteLine("Reading GRAMM topography " + ((int)((float)i / (NROW + 2) * 100F)).ToString() + "%");
+                        Console.WriteLine("    Reading GRAMM topography " + ((int)((float)i / (NROW + 2) * 100F)).ToString() + "%");
                     }
                 }
                 reader.Close();
@@ -234,21 +256,32 @@ namespace Mesh
                         //non-transformed coordinates
                         double X1 = (NI - 1) * IMODI;
                         double Y1 = (NJ - 1) * IMODI;
+                        //non-transformed coordinates
+                        // double X1 = (NI - 1) * IMODI;
+                        // double Y1 = (NJ - 1) * IMODI;
 
                         //transformed coordinates
                         double X2 = X1 * cosinus - Y1 * sinus + I1;
                         double Y2 = X1 * sinus + Y1 * cosinus + J1;
 
                         //computation of indices for the Topography file date
-                        int IP = Convert.ToInt32(((X2 - ILIUN) / ICSIZE) + 1);
-                        int JP = -Convert.ToInt32(((Y2 - JLIUN) / ICSIZE) - NROW);
+                        int IP = Convert.ToInt32(Math.Floor(((X2 - ILIUN) / ICSIZE))) + 1; //TODO: +1 before
+                        int JP = -Convert.ToInt32(Math.Floor(((Y2 - JLIUN) / ICSIZE)) - NROW) + 1;
 
                         //computation of coordinates
-                        int JKOO = Convert.ToInt32(JLIUN + (NROW - JP + 1) * ICSIZE);
-                        int IKOO = Convert.ToInt32(ILIUN + (IP - 1) * ICSIZE);
+                        double IKOO = ILIUN + ((double)IP - 1) * ICSIZE;
+                        double JKOO = JLIUN + (double)(NROW - JP + 1) * ICSIZE;
                         double gewges = 0;
                         double gew = 0;
-                        double wert = 0;
+                        double wert = 0; 
+                        // Console.WriteLine("IP:" + IP);
+                        // Console.WriteLine("JP:" + JP);           
+                        // Console.WriteLine("X2:" + X2);
+                        // Console.WriteLine("Y2:" + Y2);
+                        // Console.WriteLine("IKOO:" + IKOO);
+                        // Console.WriteLine("JKOO:" + JKOO);
+                        // Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0") + " " + ICSIZE);
+                        // throw new Exception();
 
                         //computation of missing mean value from the 4 corners
                         for (int IPP = IP; IPP < IP + 2; IPP++)
@@ -309,14 +342,136 @@ namespace Mesh
                                 }
                             }
                         }
+
+                        /*
+                        if (ADH[IP][JP] < VALSMIN)
+                        {
+                            VALSMIN = ADH[IP][JP];
+                        }
+                        if (ADH[IP+1][JP] < VALSMIN)
+                        {
+                            VALSMIN = ADH[IP+1][JP];
+                        }
+                        if (ADH[IP][JP+1] < VALSMIN)
+                        {
+                            VALSMIN = ADH[IP][JP+1];
+                        }
+                        if (ADH[IP][JP+1] < VALSMIN)
+                        {
+                            VALSMIN = ADH[IP+1][JP+1];
+                        }
+                        */
+
+                        
+                        
+
                         double H12 = ADH[IP][JP] + (ADH[IP][JP + 1] - ADH[IP][JP]) / ICSIZE * (Y2 - JKOO);
                         double H34 = ADH[IP + 1][JP] + (ADH[IP + 1][JP + 1] - ADH[IP + 1][JP]) / ICSIZE * (Y2 - JKOO);
-                        AHE[NI, NJ, 1] = Math.Max(H12 + (H34 - H12) / ICSIZE * (X2 - IKOO), 0);
+                        double dummy = H12 + (H34 - H12) / ICSIZE * (X2 - IKOO);
+                        // dummy =  Math.Max(dummy, 0);
 
+                        double dummy0 = Blerp(
+                            (double)ADH[IP][JP], 
+                            (double)ADH[IP+1][JP], 
+                            (double)ADH[IP][JP+1], 
+                            (double)ADH[IP+1][JP+1], 
+                            (X2 - IKOO) / ICSIZE, 
+                            (Y2 - JKOO) / ICSIZE
+                        );
+                        int IP0 = IP+1;
+                        double dummyX0 = Blerp(
+                            (double)ADH[IP][JP], 
+                            (double)ADH[IP+1][JP], 
+                            (double)ADH[IP][JP+1], 
+                            (double)ADH[IP+1][JP+1], 
+                            (X2 - IKOO) / ICSIZE, 
+                            (Y2 - JKOO) / ICSIZE
+                        );
+                        int IP1 = IP0-1;
+                        double dummyX1 = Blerp(
+                            (double)ADH[IP1][JP], 
+                            (double)ADH[IP1+1][JP], 
+                            (double)ADH[IP1][JP+1], 
+                            (double)ADH[IP1+1][JP+1], 
+                            (X2 - IKOO) / ICSIZE, 
+                            (Y2 - JKOO) / ICSIZE
+                        );
+                        int JP0 = JP+1;
+                        double dummyY0 = Blerp(
+                            (double)ADH[IP][JP0], 
+                            (double)ADH[IP+1][JP0], 
+                            (double)ADH[IP][JP0+1], 
+                            (double)ADH[IP+1][JP0+1], 
+                            (X2 - IKOO) / ICSIZE, 
+                            (Y2 - JKOO) / ICSIZE
+                        );
+                        int JP1 = JP-1;
+                        double dummyY1 = Blerp(
+                            (double)ADH[IP][JP1], 
+                            (double)ADH[IP+1][JP1], 
+                            (double)ADH[IP][JP1+1], 
+                            (double)ADH[IP+1][JP1+1], 
+                            (X2 - IKOO) / ICSIZE, 
+                            (Y2 - JKOO) / ICSIZE
+                        );
+
+                        AHE[NI, NJ, 1] = dummy0;
+
+       
+                        Console.WriteLine("NI:" + NI);
+                        Console.WriteLine("X2:" + X2);
+                        Console.WriteLine("NJ:" + NJ);        
+                        Console.WriteLine("Y2:" + Y2);
+
+                        if((NI==40) & (NJ==10)) {
+                            Console.WriteLine("IP:" + IP);
+                            Console.WriteLine("JP:" + JP);           
+                            Console.WriteLine("NI:" + NI);
+                            Console.WriteLine("NJ:" + NJ);        
+                            Console.WriteLine("X2:" + X2);
+                            Console.WriteLine("Y2:" + Y2);
+                            Console.WriteLine("IKOO:" + IKOO);
+                            Console.WriteLine("JKOO:" + JKOO);
+                            Console.WriteLine("AHE:" + AHE[NI, NJ, 1]);
+                            Console.WriteLine("AHE:" + dummyX0);
+                            Console.WriteLine("AHE:" + dummyY0);
+                            Console.WriteLine("AHE:" + dummyX1);
+                            Console.WriteLine("AHE:" + dummyY1);
+                        }
+
+                        /*
+                        if((NI==192) & (NJ==132)) {
+                            Console.WriteLine("IP:" + IP);
+                            Console.WriteLine("JP:" + JP);           
+                            Console.WriteLine("X2:" + X2);
+                            Console.WriteLine("Y2:" + Y2);
+                            Console.WriteLine("IKOO:" + IKOO);
+                            Console.WriteLine("JKOO:" + JKOO);
+                            Console.WriteLine("AHE:" + AHE[NI, NJ, 1]);
+                            Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0") + " " + ICSIZE);
+                            Console.WriteLine(ADH[IP][JP].ToString("0.00"));      
+                            Console.WriteLine(ADH[IP+1][JP].ToString("0.00"));      
+                            Console.WriteLine(ADH[IP][JP+1].ToString("0.00"));      
+                            Console.WriteLine(ADH[IP+1][JP+1].ToString("0.00"));    
+                            Console.WriteLine(ADH[IP][JP-1].ToString("0.00"));      
+                            Console.WriteLine(ADH[IP+1][JP-1].ToString("0.00"));     
+                            Console.WriteLine(ADH[IP-1][JP].ToString("0.00"));      
+                            Console.WriteLine(ADH[IP-1][JP-1].ToString("0.00"));   
+                        }
+                        */
+
+                        // AHE[NI, NJ, 1] =  Math.Max(dummy, 0);
+                        // Console.WriteLine(dummy0.ToString("0.00"));
+                        // Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0"));  
+
+                        if (Math.Abs(dummy - dummy0) > 0.0001F) {
+                            Console.WriteLine(dummy0.ToString("0.0") + ' ' + dummy.ToString("0.0"));
+                        }
+     
                         //minimum of terrain data
-                        if (ADH[IP][JP] < AHMIN)
+                        if (AHE[NI, NJ, 1] < AHMIN)
                         {
-                            AHMIN = ADH[IP][JP];
+                                AHMIN = AHE[NI, NJ, 1];
                         }
 
                         //minimum elevation at the border
@@ -326,29 +481,20 @@ namespace Mesh
                         }
                     }
                 }
-
-                //flatten topography towards domain borders
-                /*
-                for(int I=2;I<NX+1;I++)
+                double AH_SUM = 0.0F;
+                for (int NJ = 1; NJ < NY + 2; NJ++)
                 {
-                    AHE[I,3,1]    = AHE[I,4,1];
-                    AHE[I,2,1]    = AHE[I,3,1];
-                    AHE[I,1,1]    = AHE[I,2,1];
-                    AHE[I,NY-1,1] = AHE[I,NY-2,1];
-                    AHE[I,NY,1]   = AHE[I,NY-1,1];
-                    AHE[I,NY+1,1] = AHE[I,NY,1];
-                }
-                for(int J=1;J<NY+2;J++)
-                {
-                    AHE[3,J,1]    = AHE[4,J,1];
-                    AHE[2,J,1]    = AHE[3,J,1];
-                    AHE[1,J,1]    = AHE[2,J,1];
-                    AHE[NX-1,J,1] = AHE[NX-2,J,1];
-                    AHE[NX,J,1]   = AHE[NX-1,J,1];
-                    AHE[NX+1,J,1] = AHE[NX,J,1];
-                }
-                 */
+                    for (int NI = 1; NI < NX + 2; NI++)
+                    {
+                        AH_SUM = AH_SUM + AHE[NI, NJ, 1];
 
+                    }
+                }
+
+                Console.WriteLine("VALSMIN: " + Convert.ToString(Math.Round(VALSMIN, 2)).Replace(decsep, "."));
+                Console.WriteLine("AHMIN: " + Convert.ToString(Math.Round(AHMIN, 2)).Replace(decsep, "."));
+                Console.WriteLine("AH_SUM: " + Convert.ToString(Math.Round(AH_SUM, 2)).Replace(decsep, "."));
+                Console.WriteLine("AHMIN_BORDER: " + Convert.ToString(Math.Round(AHMIN_BORDER, 2)).Replace(decsep, "."));
 
                 //coordinates of cells in x-direction
                 int NK = NZ;
@@ -386,24 +532,18 @@ namespace Mesh
                     abstand = 0;
                     for (int smooth = Math.Min(SmoothBorderCellNr, NY); smooth > 0; smooth--)
                     {
+                        // Console.WriteLine("Smoothing iteration ...");
                         //AHE[I, smooth, 1] = AHE[I, smooth + 1, 1] - (AHE[I, smooth + 1, 1] - AHMIN) / 4;
 
                         //lineare Interpolation zum Rand hin
                         abstand += DDY[smooth];
                         AHE[I, smooth, 1] = AHE[I, SmoothBorderCellNr + 1, 1] - (AHE[I, SmoothBorderCellNr + 1, 1] - AHMIN_BORDER) * abstand / totaldistance;
                     }
-                    /*
-                    AHE[I, 6, 1] = AHE[I, 7, 1] - (AHE[I, 7, 1] - AHMIN) / 4;
-                    AHE[I, 5, 1] = AHE[I, 6, 1] - (AHE[I, 7, 1] - AHMIN) / 4;
-                    AHE[I, 4, 1] = AHE[I, 5, 1] - (AHE[I, 7, 1] - AHMIN) / 4;
-                    AHE[I, 3, 1] = AHMIN;
-                    AHE[I, 2, 1] = AHMIN;
-                    AHE[I, 1, 1] = AHMIN;
-                     */
 
                     abstand = 0;
                     for (int smooth = Math.Min(SmoothBorderCellNr, NY); smooth > 0; smooth--)
                     {
+                        // Console.WriteLine("Smoothing iteration ...");
                         //AHE[I, NY - smooth + 2, 1] = AHE[I, NY - smooth + 1, 1] - (AHE[I, NY - smooth + 1, 1] - AHMIN) / 4;
 
                         //lineare Interpolation zum Rand hin
@@ -411,14 +551,6 @@ namespace Mesh
                         AHE[I, NY - smooth + 2, 1] = AHE[I, NY - SmoothBorderCellNr + 1, 1] - (AHE[I, NY - SmoothBorderCellNr + 1, 1] - AHMIN_BORDER) * abstand / totaldistance;
                     }
 
-                    /*
-                    AHE[I, NY - 4, 1] = AHE[I, NY - 5, 1] - (AHE[I, NY - 5, 1] - AHMIN) / 4;
-                    AHE[I, NY - 3, 1] = AHE[I, NY - 4, 1] - (AHE[I, NY - 5, 1] - AHMIN) / 4;
-                    AHE[I, NY - 2, 1] = AHE[I, NY - 3, 1] - (AHE[I, NY - 5, 1] - AHMIN) / 4;
-                    AHE[I, NY - 1, 1] = AHMIN;
-                    AHE[I, NY, 1] = AHMIN;
-                    AHE[I, NY + 1, 1] = AHMIN;
-                     */
                 }
 
                 totaldistance = 0;
@@ -432,40 +564,17 @@ namespace Mesh
                     abstand = 0;
                     for (int smooth = Math.Min(SmoothBorderCellNr, NX); smooth > 0; smooth--)
                     {
-                        //AHE[smooth, J, 1] = AHE[smooth + 1, J, 1] - (AHE[smooth + 1, J, 1] - AHMIN) / 4;
-
-                        //lineare Interpolation zum Rand hin
+                        // Console.WriteLine("Smoothing iteration ...");
                         abstand += DDX[smooth];
                         AHE[smooth, J, 1] = AHE[SmoothBorderCellNr + 1, J, 1] - (AHE[SmoothBorderCellNr + 1, J, 1] - AHMIN_BORDER) * abstand / totaldistance;
                     }
-
-                    /*
-                    AHE[6, J, 1] = AHE[7, J, 1] - (AHE[7, J, 1] - AHMIN) / 4;
-                    AHE[5, J, 1] = AHE[6, J, 1] - (AHE[7, J, 1] - AHMIN) / 4;
-                    AHE[4, J, 1] = AHE[5, J, 1] - (AHE[7, J, 1] - AHMIN) / 4;
-                    AHE[3, J, 1] = AHMIN;
-                    AHE[2, J, 1] = AHMIN;
-                    AHE[1, J, 1] = AHMIN;
-                     */
-
                     abstand = 0;
                     for (int smooth = Math.Min(SmoothBorderCellNr, NX); smooth > 0; smooth--)
                     {
-                        //AHE[NX - smooth + 2, J, 1] = AHE[NX - smooth + 1, J, 1] - (AHE[NX - smooth + 1, J, 1] - AHMIN) / 4;
-
-                        //lineare Interpolation zum Rand hin
+                        // Console.WriteLine("Smoothing iteration ...");
                         abstand += DDY[NY - smooth + 1];
                         AHE[NX - smooth + 2, J, 1] = AHE[NX - SmoothBorderCellNr + 1, J, 1] - (AHE[NX - SmoothBorderCellNr + 1, J, 1] - AHMIN_BORDER) * abstand / totaldistance;
                     }
-
-                    /*
-                    AHE[NX - 4, J, 1] = AHE[NX - 5, J, 1] - (AHE[NX - 5, J, 1] - AHMIN) / 4;
-                    AHE[NX - 3, J, 1] = AHE[NX - 4, J, 1] - (AHE[NX - 5, J, 1] - AHMIN) / 4;
-                    AHE[NX - 2, J, 1] = AHE[NX - 3, J, 1] - (AHE[NX - 5, J, 1] - AHMIN) / 4;
-                    AHE[NX - 1, J, 1] = AHMIN;
-                    AHE[NX, J, 1] = AHMIN;
-                    AHE[NX + 1, J, 1] = AHMIN;
-                     */
                 }
 
 
@@ -485,8 +594,8 @@ namespace Mesh
                         }
                     }
                 }
-                Console.WriteLine("Minimum elevation: " + Convert.ToString(Math.Round(AHMIN, 0)));
-                Console.WriteLine("Maximum elevation: " + Convert.ToString(Math.Round(AHMAX, 0)));
+                Console.WriteLine("Minimum elevation: " + Convert.ToString(Math.Round(AHMIN, 0)).Replace(decsep, "."));
+                Console.WriteLine("Maximum elevation: " + Convert.ToString(Math.Round(AHMAX, 0)).Replace(decsep, "."));
 
                 Console.WriteLine("Number of cells in E-W direction: " + Convert.ToString(NX));
                 Console.WriteLine("Cell length in E-W direction: " + Convert.ToString(DDX[1]));
@@ -509,10 +618,15 @@ namespace Mesh
                 Console.WriteLine("S-N extents: " + Convert.ToString(Math.Round(Y[NY + 1], 0)));
 
                 //coordinates of cells in z-direction
-                Z[1] = AHMIN;
+                Z[1] = AHMIN; // Minimum elevation
                 int K = 1;
-                Console.WriteLine("Z" + Convert.ToString(K) + "= " + Convert.ToString(Math.Round(Z[K], 1)) + " m");
-                for (K = 2; K < NZ + 2; K++)
+                Console.WriteLine("Z" + Convert.ToString(K) + "= " + Convert.ToString(Math.Round(Z[K], 1)).Replace(decsep, ".") + " m");
+
+                for (K = 2; K < 2 + Program.NrConstantHeightCells; K++)
+                {
+                    Z[K] = Z[K - 1] + DDZ;
+                }
+                for (K = 2 + Program.NrConstantHeightCells; K < NZ + 2; K++)
                 {
                     Z[K] = Z[K - 1] + DDZ * Math.Pow(ADZ, K - 2);
                 }
@@ -526,8 +640,7 @@ namespace Mesh
                 //top of model domain needs to be larger than 3 times the maximum elevation
                 if ((Z[NZ + 1] - AHMIN) < (AHMAX - AHMIN) * 3)
                 {
-                    Console.WriteLine("Height of the model domain is too low.\nIncrease vertical streching factor or\nIncrease the number of vertical grid points or\nIncrease the height of the first layer");
-                    return false;
+                    throw new Exception("Height of the model domain is too low.\nIncrease vertical streching factor or\nIncrease the number of vertical grid points or\nIncrease the height of the first layer");
                 }
 
                 double DWMAX = Z[NZ + 1] - AHMIN;

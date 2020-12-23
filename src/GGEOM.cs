@@ -33,7 +33,7 @@ namespace Mesh
         private string _pathwindfield;
         public string PathWindfield { set { _pathwindfield = value; } }
 
-        private bool _write_compressed_file = false;
+        private bool _write_compressed_file = true;
         public bool WriteCompressedFile { set { _write_compressed_file = value; } get { return _write_compressed_file; } }
 
         private double[,] _AH;

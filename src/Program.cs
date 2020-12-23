@@ -35,7 +35,8 @@ namespace Mesh
 
         public static string TopoFile = "elevation.asc";
         public static double DDZ = 10.0; //cell height of the first level
-        public static double ADZ = 1.0; //vertical streching factor      
+        public static double ADZ = 1.0; //vertical streching factor   
+        public static Int32 NrConstantHeightCells = 0;
         public static Int32 SmoothBorderCellNr = 0;
         public static string LanduseFile = "landcover.asc";
         public static bool WriteTxtFiles = false;
@@ -61,27 +62,38 @@ namespace Mesh
                 StreamReader reader = new StreamReader("geom.in");
                 string[] text = new string[5];
                 reader = new StreamReader("geom.in");
-                Program.TopoFile = reader.ReadLine().Trim();  //filename of the chosen topography
+                text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
+                Program.TopoFile = text[0].Trim();  //filename of the chosen topography
 
                 text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
-                Program.DDZ = Convert.ToDouble(text[0].Replace(".", decsep)); //cell height of the first level
+                Program.DDZ = Convert.ToDouble(text[0].Trim().Replace(".", decsep)); //cell height of the first level
 
                 text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
-                Program.ADZ = Convert.ToDouble(text[0].Replace(".", decsep)); //vertical streching factor      
+                Program.ADZ = Convert.ToDouble(text[0].Trim().Replace(".", decsep)); //vertical streching factor      
 
                 text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
-                Program.SmoothBorderCellNr = Convert.ToInt32(text[0]);
-
-                Program.LanduseFile = reader.ReadLine().Trim();  //filename of the chosen topography
+                Program.SmoothBorderCellNr = Convert.ToInt32(text[0].Trim());
 
                 text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
-                Program.WriteTxtFiles = Convert.ToInt32(text[0]) == 1; // Do we write txt files
+                Program.NrConstantHeightCells = Convert.ToInt32(text[0].Trim());
+
+                if (Program.NrConstantHeightCells >= Program.GrammDomRect.NZ)
+                {
+                    throw new FileLoadException("NrConstantHeightCells should be below NZ!");
+                }
+
+                text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
+                Program.LanduseFile = text[0].Trim();  //filename of the chosen topography 
+
+                text = reader.ReadLine().Split(splitchar, StringSplitOptions.RemoveEmptyEntries);
+                Program.WriteTxtFiles = (text[0].Trim().ToLower() == "y") | (text[0].Trim().ToLower() == "yes"); // Do we write txt files
                 reader.Close();
                 reader.Dispose();
                 return File.Exists(Program.TopoFile);
             }
-            catch
+            catch (Exception e)
             {
+                Console.WriteLine("{0} Exception caught.", e);
                 Console.WriteLine("Failed to read geom.in");
                 return false;
             }
@@ -109,6 +121,7 @@ namespace Mesh
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                 GrammDomRect.North = Convert.ToDouble(text[0].Replace(".", decsep)); //northern boarder
                 reader.Close();
+
                 GrammDomRect.DX = Convert.ToInt32((GrammDomRect.East - GrammDomRect.West) / GrammDomRect.NX);
                 GrammDomRect.DY = Convert.ToInt32((GrammDomRect.North - GrammDomRect.South) / GrammDomRect.NY);
 
@@ -163,49 +176,83 @@ Console.WriteLine("| .Net Core Version |");
             // 11.04.17 Ku use arguments
             Console_Arguments(args);
 
+            bool is_ok = false;
             try
             {
-                if (!ReadGrammGebFile())
-                {
-                    throw new FileLoadException();
-                }
-
+                is_ok = ReadGrammGebFile();
             }
-            catch
+            catch (Exception e)
             {
+                Console.WriteLine("{0} Exception caught.", e);
                 throw new FileLoadException();
+            }
+            if (!is_ok)
+            {
+                throw new FileLoadException("Unable to read GRAMM.geb file!");
             }
 
             try
             {
-                if (!ReadGeomInFile())
-                {
-                    throw new FileLoadException();
-                }
-
+                is_ok = ReadGeomInFile();
             }
-            catch
+            catch (Exception e)
             {
+                Console.WriteLine("{0} Exception caught.", e);
                 throw new FileLoadException();
+            }
+            if (!is_ok)
+            {
+                throw new FileLoadException("Unable to read geom.in file!");
             }
 
             Console.WriteLine(
-                "TopoFile:                  " + Program.TopoFile + '\n' +
-                "LanduseFile:               " + Program.TopoFile + '\n' +
-                "First cell height          " + Program.DDZ.ToString("0.00") + '\n' +
-                "Vertical streching factor: " + Program.ADZ.ToString("0.0000") + '\n' +
-                "Model Domain West border:  " + GrammDomRect.West + '\n' +
-                "Model Domain East border:  " + GrammDomRect.East + '\n' +
-                "Model Domain South border: " + GrammDomRect.South + '\n' +
-                "Model Domain North border: " + GrammDomRect.North + '\n' +
-                "Mesh NY:                   " + GrammDomRect.NX + '\n' +
-                "Mesh NY:                   " + GrammDomRect.NY + '\n' +
-                "Mesh NZ:                   " + GrammDomRect.NZ + '\n' +
-                "Mesh DX:                   " + GrammDomRect.DX + '\n' +
-                "Mesh DY:                   " + GrammDomRect.DY + '\n' +
-                "Mesh size:                 " + (GrammDomRect.NX * GrammDomRect.NY * GrammDomRect.NZ) + '\n'
+                "TopoFile:                           " + Program.TopoFile + '\n' +
+                "LanduseFile:                        " + Program.LanduseFile + '\n' +
+                "First cell height                   " + Program.DDZ.ToString("0.00").Replace(decsep, ".") + '\n' +
+                "Vertical streching factor:          " + Program.ADZ.ToString("0.0000").Replace(decsep, ".") + '\n' +
+                "Nr. smoothed border cells:          " + Program.SmoothBorderCellNr.ToString() + '\n' +
+                "Nr. ground constant height cells:   " + Program.NrConstantHeightCells.ToString() + '\n' +
+                "Do write *.text files:              " + Program.WriteTxtFiles.ToString() + '\n' +
+                "Model Domain West border:           " + GrammDomRect.West + '\n' +
+                "Model Domain East border:           " + GrammDomRect.East + '\n' +
+                "Model Domain South border:          " + GrammDomRect.South + '\n' +
+                "Model Domain North border:          " + GrammDomRect.North + '\n' +
+                "Mesh NY:                            " + GrammDomRect.NX + '\n' +
+                "Mesh NY:                            " + GrammDomRect.NY + '\n' +
+                "Mesh NZ:                            " + GrammDomRect.NZ + '\n' +
+                "Mesh DX:                            " + GrammDomRect.DX + '\n' +
+                "Mesh DY:                            " + GrammDomRect.DY + '\n' +
+                "Mesh size:                          " + (GrammDomRect.NX * GrammDomRect.NY * GrammDomRect.NZ) + '\n'
             );
 
+
+            CreateGrammGrid gr = new CreateGrammGrid
+            {
+            };
+            gr.WriteCompressedFile = true;
+
+            try
+            {
+                Console.WriteLine("");
+                Console.WriteLine("###########################################");
+                Console.WriteLine("Generating geometry...");
+                Console.WriteLine("");
+                is_ok = gr.GenerateGgeomFile();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("{0} Exception caught.", e);
+                throw new FileLoadException("Failed to generate grid!");
+            }
+            if (!is_ok)
+            {
+                throw new FileLoadException("Failed to generate grid!");
+            }
+
+            Console.WriteLine("");
+            Console.WriteLine("###########################################");
+            Console.WriteLine("Generating land-use...");
+            Console.WriteLine("");
 
             if (File.Exists(Program.LanduseFile))
             {
@@ -230,43 +277,39 @@ Console.WriteLine("| .Net Core Version |");
 
                     if ((GrammDomRect.West < x11) || (GrammDomRect.East > x11 + dx * nx) || (GrammDomRect.South < y11) || (GrammDomRect.North > y11 + dx * ny))
                     {
-                        Console.WriteLine("GRAMM Domain is outside the borders of the selected landuse file");
+                        throw new Exception("GRAMM Domain is outside the borders of the selected landuse file");
                     }
                     Landuse lu = new Landuse();
-                    lu.GenerateLanduseFile(Program.LanduseFile, true);
-                    if (lu.ok == true)
+                    try
+                    {
+                        lu.GenerateLanduseFile(Program.LanduseFile, true);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("{0} Exception caught.", e);
+                        throw new FileLoadException("Failed to generate landuse file!");
+                    }
+                    if (!lu.ok)
+                    {
+                        throw new FileLoadException("Failed to generate landuse file!");
+                    }
+                    else
                     {
                         Console.WriteLine("Generated landuse file.");
-
+                        Console.WriteLine("Exporting landuse.asc ...");
+                        Console.WriteLine("Generated landuse.asc.");
                     }
                 }
-                catch
+                catch (Exception e)
                 {
-                    Console.WriteLine("Unable to generate landuse file.");
+                    Console.WriteLine("{0} Exception caught.", e);
+                    throw new Exception("Unable to generate landuse file!");
                 }
-            } 
+            }
             else
             {
                 Console.WriteLine("No landuse file....");
             }
-
-
-            CreateGrammGrid gr = new CreateGrammGrid
-            {
-            };
-            gr.WriteCompressedFile = true;
-
-            if (gr.GenerateGgeomFile())
-            {
-            }
-            else
-            {
-                Console.WriteLine("Failed to generate grid!");
-            }
-
-
-
-
         }
 
         static void ShowCopyright(string[] args)

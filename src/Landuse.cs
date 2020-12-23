@@ -25,7 +25,6 @@ namespace Mesh
     /// </summary>
     public class Landuse
     {
-
         public bool ok = true;
 
         private string decsep = NumberFormatInfo.CurrentInfo.NumberDecimalSeparator;
@@ -71,7 +70,6 @@ namespace Mesh
             }
             return text;
         }
-
 
         //module to initialze a jagged array
         /// <summary>
@@ -336,15 +334,28 @@ namespace Mesh
                 }
             }
 
-            int NX = Program.GrammDomRect.NX;
-            int NY = Program.GrammDomRect.NY;
-            int NZ = Program.GrammDomRect.NZ;
-            double xsimin = Program.GrammDomRect.West;
-            double xsimax = Program.GrammDomRect.East;
-            double etamin = Program.GrammDomRect.South;
-            double etamax = Program.GrammDomRect.North; 
-            Int32 DX = Program.GrammDomRect.DX;
-            Int32 DY = Program.GrammDomRect.DY;
+
+            //reading field sizes from file GRAMM.geb
+            StreamReader reader = new StreamReader("GRAMM.geb");
+            string[] text = new string[5];
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            int NX = Convert.ToInt32(text[0]);  //number of horizontal cells in x direction
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            int NY = Convert.ToInt32(text[0]);  //number of horizontal cells in y direction
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            int NZ = Convert.ToInt32(text[0]);  //number of vertical cells in z direction
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            double xsimin = Convert.ToDouble(text[0].Replace(".", decsep)); //western boarder
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            double xsimax = Convert.ToDouble(text[0].Replace(".", decsep)); //eastern boarder
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            double etamin = Convert.ToDouble(text[0].Replace(".", decsep)); //southern boarder
+            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            double etamax = Convert.ToDouble(text[0].Replace(".", decsep)); //northern boarder
+            reader.Close();
+
+            int DX = Convert.ToInt32((xsimax - xsimin) / NX);
+            int DY = Convert.ToInt32((etamax - etamin) / NY);
 
             int IKOOA = Convert.ToInt32(xsimin);
             int JKOOA = Convert.ToInt32(etamin);
@@ -373,8 +384,7 @@ namespace Mesh
 
             if (FileName != "Default-Values")
             {
-                StreamReader reader = new StreamReader(FileName);
-                string[] text = new string[10];
+                reader = new StreamReader(FileName);
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                 int NCOL = Convert.ToInt32(text[1]);  //number of cells in x-direction of topography file
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
@@ -409,9 +419,10 @@ namespace Mesh
                 for (int NNJ = 1; NNJ < NROW + 1; NNJ++)
                 {
 
+
                     if (NNJ % 40 == 0)
                     {
-                        Console.WriteLine("Reading landuse file " + ((int)((float)NNJ / (NROW + 2) * 100F)).ToString() + "%");
+                        Console.WriteLine("    Reading landuse file " + ((int)((float)NNJ / (NROW + 2) * 100F)).ToString() + "%");
                     }
 
                     int I = 1;
@@ -447,6 +458,7 @@ namespace Mesh
                                 else
                                 {
                                     Console.WriteLine("CLC-Class: " + Convert.ToString(ADH[NNI] + "\r\ncheck your clc-data (must be 3-digits)\r\nand missing values need to be set to -9999"));
+
                                     throw new IOException();
                                 }
                             }
@@ -504,6 +516,7 @@ namespace Mesh
                 //computation of mean values for each cell
                 for (int I = 1; I < NX1; I++)
                 {
+
                     for (J = 1; J < NY1; J++)
                     {
                         ALAMBDA[I, J] = 0;
@@ -562,6 +575,7 @@ namespace Mesh
                 //computation of mean values for each cell
                 for (int I = 1; I < NX1; I++)
                 {
+
                     for (int J = 1; J < NY1; J++)
                     {
                         ALAMBDA[I, J] = 0;
@@ -634,8 +648,6 @@ namespace Mesh
                 }
             }
 
-
-
             if (Program.WriteTxtFiles)
             {
                 WriteESRIFile Result = new WriteESRIFile
@@ -651,54 +663,144 @@ namespace Mesh
                     Unit = "m",
                     Round = 4,
                     DblArr = Z0,
-                    FileName = Path.Combine("roughness.txt")
+                    FileName = "roughness.txt"
                 };
-
                 Result.WriteDblArrResult();
 
                 //output of surface density
                 Result.Unit = string.Empty;
                 Result.Round = 0;
                 Result.DblArr = RHOB;
-                Result.FileName = Path.Combine("density.txt");
+                Result.FileName = "density.txt";
                 Result.WriteDblArrResult();
 
                 //output of heat conductivity
                 Result.Unit = string.Empty;
                 Result.Round = 2;
                 Result.DblArr = ALAMBDA;
-                Result.FileName = Path.Combine("conductivity.txt");
+                Result.FileName = "conductivity.txt";
                 Result.WriteDblArrResult();
 
                 //output of surface moisture
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = FW;
-                Result.FileName = Path.Combine("moisture.txt");
+                Result.FileName = "moisture.txt";
                 Result.WriteDblArrResult();
 
                 //output of emissivity
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = EPSG;
-                Result.FileName = Path.Combine("emissivity.txt");
+                Result.FileName = "emissivity.txt";
                 Result.WriteDblArrResult();
 
                 //output of surface albedo
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = ALBEDO;
-                Result.FileName = Path.Combine("albedo.txt");
+                Result.FileName = "albedo.txt";
                 Result.WriteDblArrResult();
-
             }
-
-
 
             Console.WriteLine("Landuse File successfully generated.");
             Console.WriteLine(" ");
 
             return ok;
+        }
+
+        //reading landuse.asc
+        /// <summary>
+        /// Read the landuse file landuse.asc
+        /// </summary>
+        public bool ReadLanduseFile()
+        {
+            try
+            {
+                if (File.Exists(Path.Combine(_projectname, @"landuse.asc")))
+                {
+                    string[] text = new string[(_NX + 2) * (_NY + 2)];
+
+                    using (FileStream fs = new FileStream(Path.Combine(_projectname, @"landuse.asc"), FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        using (StreamReader r = new StreamReader(fs))
+                        {
+                            _RHOB = new double[_NX + 1, _NY + 1];
+                            _ALAMBDA = new double[_NX + 1, _NY + 1];
+                            _Z0 = new double[_NX + 1, _NY + 1];
+                            _FW = new double[_NX + 1, _NY + 1];
+                            _EPSG = new double[_NX + 1, _NY + 1];
+                            _ALBEDO = new double[_NX + 1, _NY + 1];
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            int n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _RHOB[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _ALAMBDA[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _Z0[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _FW[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _EPSG[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                            text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            n = 0;
+                            for (int j = 1; j < _NY + 1; j++)
+                            {
+                                for (int i = 1; i < _NX + 1; i++)
+                                {
+                                    _ALBEDO[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    n++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         //exporting landuse.asc for GRAMM sub-domain
@@ -709,7 +811,7 @@ namespace Mesh
         {
             try
             {
-                StreamWriter writer = new StreamWriter(Path.Combine(_projectname, @"Computation", "landuse.asc"));
+                StreamWriter writer = new StreamWriter("landuse.asc");
                 for (int j = 1; j < _NY + 1; j++)
                 {
                     for (int i = 1; i < _NX + 1; i++)
@@ -774,7 +876,7 @@ namespace Mesh
                     Unit = "m",
                     Round = 4,
                     DblArr = _Z0,
-                    FileName = Path.Combine(_projectname, @"Maps", "roughness.txt")
+                    FileName = "roughness.txt"
                 };
                 Result.WriteDblArrResult();
 
@@ -782,35 +884,35 @@ namespace Mesh
                 Result.Unit = string.Empty;
                 Result.Round = 0;
                 Result.DblArr = _RHOB;
-                Result.FileName = Path.Combine(_projectname, @"Maps", "density.txt");
+                Result.FileName = "density.txt";
                 Result.WriteDblArrResult();
 
                 //output of heat conductivity
                 Result.Unit = string.Empty;
                 Result.Round = 2;
                 Result.DblArr = _ALAMBDA;
-                Result.FileName = Path.Combine(_projectname, @"Maps", "conductivity.txt");
+                Result.FileName = "conductivity.txt";
                 Result.WriteDblArrResult();
 
                 //output of surface moisture
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = _FW;
-                Result.FileName = Path.Combine(_projectname, @"Maps", "moisture.txt");
+                Result.FileName = "moisture.txt";
                 Result.WriteDblArrResult();
 
                 //output of emissivity
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = _EPSG;
-                Result.FileName = Path.Combine(_projectname, @"Maps", "emissivity.txt");
+                Result.FileName = "emissivity.txt";
                 Result.WriteDblArrResult();
 
                 //output of surface albedo
                 Result.Unit = string.Empty;
                 Result.Round = 3;
                 Result.DblArr = _ALBEDO;
-                Result.FileName = Path.Combine(_projectname, @"Maps", "albedo.txt");
+                Result.FileName = "albedo.txt";
                 Result.WriteDblArrResult();
 
                 return true;
