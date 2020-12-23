@@ -229,7 +229,6 @@ Console.WriteLine("| .Net Core Version |");
             CreateGrammGrid gr = new CreateGrammGrid
             {
             };
-            gr.WriteCompressedFile = true;
 
             try
             {

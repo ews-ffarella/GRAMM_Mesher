@@ -26,8 +26,6 @@ namespace Mesh
     /// </summary>
     public class CreateGrammGrid
     {
-        private bool _writeCompressedFile = false;
-        public bool WriteCompressedFile { set { _writeCompressedFile = value; } }
         /// <summary>
         /// Generates the ggeom.asc file
         /// </summary> 
@@ -52,7 +50,7 @@ namespace Mesh
 
         public bool GenerateGgeomFile()
         {
-            float[][] ADH;
+            double[][] ADH;
 
             int NX = Program.GrammDomRect.NX;
             int NY = Program.GrammDomRect.NY;
@@ -66,69 +64,64 @@ namespace Mesh
             double DDZ = Program.DDZ;
 
             double winkel = 0;  //angle between domain orientation and north
-            int NX1 = NX + 1;
-            int NY1 = NY + 1;
-            int NZ1 = NZ + 1;
-            int NX2 = NX + 2;
-            int NY2 = NY + 2;
-            int NZ2 = NZ + 2;
+            int NX_PTS = NX + 1;
+            int NY_PTS = NY + 1;
+            int NZ_PTS = NZ + 1;
             int NXY = NX * NY;  //number of cells in a horizontal layer
             int NXYZ = NX * NY * NZ; //total number of cells
             int NNNS = 4 * NXY;
 
-            // double[][] AH = CreateArray<double[]>(NX1, () => new double[NY1]);
-
-
-            double[] XKO = new double[NX2];  //x-coordinates of cells
-            double[] YKO = new double[NY2];  //y-coordinates of cells
-            double[] ZKO = new double[NZ2];  //z-coordinates of cells
-            double[,] AH = new double[NX1, NY1]; //height of the topography at each cell point
-            double[,,] VOL = new double[NX1, NY1, NZ1]; //volume of each cell
-            double[,,] AREAX = new double[NX2, NY1, NZ1]; //western cell face
-            double[,,] AREAY = new double[NX1, NY2, NZ1]; //eastern cell face
-            double[,,] AREAZ = new double[NX1, NY1, NZ2]; //bottom cell face
-            double[,,] AREAZX = new double[NX1, NY1, NZ2]; //x-projection of bottom cell face
-            double[,,] AREAZY = new double[NX1, NY1, NZ2]; //y-projection of bottom cell face
-            double[,,] AHE = new double[NX2, NY2, NZ2]; //heights of the corner points of a cell
-            double[,,] ZSP = new double[NX1, NY1, NZ1]; //height of the center of cells
-            double[] DDX = new double[NX1]; //cell size in x-direction
-            double[] DDY = new double[NY1]; //cell size in y-direction
-            double[] ZAX = new double[NX1]; //x-coordinate of cell center
-            double[] ZAY = new double[NY1]; //y-coordinate of cell center
-            double[] X = new double[NX2]; //x-coordinate of cell faces
-            double[] Y = new double[NY2]; //y-coordinate of cell faces
-            double[] DX = new double[NX1]; //cell size for each cell in x-direction
-            double[] DY = new double[NY1]; //cell size for each cell in y-direction
-            double[] Z = new double[NZ2]; //absolute cell height for each cell in z-direction
-            double[] DW = new double[NZ2]; //cell height for each cell in z-direction
-            double[,,] AREAXYZ = new double[NX1, NY1, NZ1]; //area of intersecting face between two half-cells
-            double[,,] AREA = new double[NX1, NY1, NZ1]; //area of bottom face
-            double[,,] AXZP = new double[NX1, NY1, NZ1];
-            double[,,] AXXYZP = new double[NX1, NY1, NZ1];
-            double[,,] AXZM = new double[NX1, NY1, NZ1];
-            double[,,] AXXYZM = new double[NX1, NY1, NZ1];
-            double[,,] AXX = new double[NX1, NY1, NZ1];
-            double[,,] AYZP = new double[NX1, NY1, NZ1];
-            double[,,] AYXYZP = new double[NX1, NY1, NZ1];
-            double[,,] AYZM = new double[NX1, NY1, NZ1];
-            double[,,] AYXYZM = new double[NX1, NY1, NZ1];
-            double[,,] AYY = new double[NX1, NY1, NZ1];
-            double[,,] AZXP = new double[NX1, NY1, NZ1];
-            double[,,] AZYP = new double[NX1, NY1, NZ1];
-            double[,,] AZXYZP = new double[NX1, NY1, NZ1];
-            double[,,] AZXM = new double[NX1, NY1, NZ1];
-            double[,,] AZYM = new double[NX1, NY1, NZ1];
-            double[,,] AZXYZM = new double[NX1, NY1, NZ1];
-            double[,,] AZZ = new double[NX1, NY1, NZ1];
-            double[,,] AXYZXP = new double[NX1, NY1, NZ1];
-            double[,,] AXYZYP = new double[NX1, NY1, NZ1];
-            double[,,] AXYZZP = new double[NX1, NY1, NZ1];
-            double[,,] AXYZXM = new double[NX1, NY1, NZ1];
-            double[,,] AXYZYM = new double[NX1, NY1, NZ1];
-            double[,,] AXYZZM = new double[NX1, NY1, NZ1];
-            double[,,] AXYZXYZ = new double[NX1, NY1, NZ1];
-            double[,] LAND = new double[NX2, NY2];
+            double[] XKO = new double[NX_PTS];  //x-coordinates of cells
+            double[] YKO = new double[NY_PTS];  //y-coordinates of cells
+            double[] ZKO = new double[NZ_PTS];  //z-coordinates of cells
+            double[][] AH = CreateArray<double[]>(NX, () => new double[NY]); //height of the topography at each cell point
+            double[][][] VOL = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ])); //volume of each cell
+            double[][][] AREAX = CreateArray<double[][]>(NX_PTS, () => CreateArray<double[]>(NY, () => new double[NZ])); //western cell face
+            double[][][] AREAY = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY_PTS, () => new double[NZ])); //eastern cell face
+            double[][][] AREAZ = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ_PTS])); //bottom cell face
+            double[][][] AREAZX = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ_PTS])); //x-projection of bottom cell face
+            double[][][] AREAZY = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ_PTS])); //y-projection of bottom cell face
+            double[][][] AHE = CreateArray<double[][]>(NX_PTS, () => CreateArray<double[]>(NY_PTS, () => new double[NZ_PTS])); //heights of the corner points of a cell
+            double[][][] ZSP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ])); //height of the center of cells
+            double[] DDX = new double[NX]; //cell size in x-direction
+            double[] DDY = new double[NY]; //cell size in y-direction
+            double[] ZAX = new double[NX]; //x-coordinate of cell center
+            double[] ZAY = new double[NY]; //y-coordinate of cell center
+            double[] X = new double[NX_PTS]; //x-coordinate of cell faces
+            double[] Y = new double[NY_PTS]; //y-coordinate of cell faces
+            double[] DX = new double[NX]; //cell size for each cell in x-direction
+            double[] DY = new double[NY]; //cell size for each cell in y-direction
+            double[] Z = new double[NZ_PTS]; //absolute cell height for each cell in z-direction
+            double[] DW = new double[NZ_PTS]; //cell height for each cell in z-direction
+            double[][][] AREAXYZ = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ])); //area of intersecting face between two half-cells
+            double[][][] AREA = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ])); //area of bottom face
+            double[][][] AXZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXXYZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXXYZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXX = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AYZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AYXYZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AYZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AYXYZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AYY = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZXP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZYP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZXYZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZXM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZYM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZXYZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AZZ = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZXP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZYP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZZP = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZXM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZYM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZZM = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][][] AXYZXYZ = CreateArray<double[][]>(NX, () => CreateArray<double[]>(NY, () => new double[NZ]));
+            double[][] LAND = CreateArray<double[]>(NX_PTS, () => new double[NY_PTS]);
             double NODDATA = 0;
+
 
             //reading topography file
             char[] splitchar = null;
@@ -210,7 +203,6 @@ namespace Mesh
             }
 
             //reading topography
-            double VALSMIN = 10000;
             double AHMIN = 10000;
             double AHMAX = -10000;
             double AHMIN_BORDER = 10000;
@@ -218,7 +210,7 @@ namespace Mesh
             bool sizeOK = true;
             try
             {
-                ADH = Landuse.CreateArray<float[]>(NCOL + 2, () => new float[NROW + 2]);
+                ADH = CreateArray<double[]>(NCOL, () => new double[NROW]);
             }
             catch
             {
@@ -231,366 +223,123 @@ namespace Mesh
             {
                 //read topography data only for the area of interest
                 char[] splitChar = new char[] { ' ', '\t', ';' };
-                for (int i = 1; i < NROW + 1; i++)
+                for (int i = 0; i < NROW; i++)
                 {
                     text = reader.ReadLine().Split(splitChar, StringSplitOptions.RemoveEmptyEntries);
-                    //for (int j = 1; j < NCOL + 1; j++)
-                    Parallel.For(1, NCOL + 1, j =>
+                    Parallel.For(0, NCOL, j =>
                     {
-                        ADH[j][i] = Convert.ToSingle(text[j - 1], CultureInfo.InvariantCulture);
+                        ADH[j][i] = Convert.ToDouble(text[j], CultureInfo.InvariantCulture);
                     });
 
                     if (i % 40 == 0)
                     {
-                        Console.WriteLine("    Reading GRAMM topography " + ((int)((float)i / (NROW + 2) * 100F)).ToString() + "%");
+                        Console.WriteLine("    Reading GRAMM topography " + ((int)((float)(i + 1) / (NROW) * 100F)).ToString() + "%");
                     }
                 }
                 reader.Close();
                 reader.Dispose();
+                Console.WriteLine("");
 
                 //computation of cell heights
-                for (int NJ = 1; NJ < NY + 2; NJ++)
+                for (int NJ = 0; NJ < NY + 1; NJ++)
                 {
-                    for (int NI = 1; NI < NX + 2; NI++)
+                    for (int NI = 0; NI < NX + 1; NI++)
                     {
                         //non-transformed coordinates
-                        double X1 = (NI - 1) * IMODI;
-                        double Y1 = (NJ - 1) * IMODI;
-                        //non-transformed coordinates
-                        // double X1 = (NI - 1) * IMODI;
-                        // double Y1 = (NJ - 1) * IMODI;
+                        double X1 = NI * IMODI;
+                        double Y1 = NJ * IMODI;
 
                         //transformed coordinates
                         double X2 = X1 * cosinus - Y1 * sinus + I1;
                         double Y2 = X1 * sinus + Y1 * cosinus + J1;
 
                         //computation of indices for the Topography file date
-                        int IP = Convert.ToInt32(Math.Floor(((X2 - ILIUN) / ICSIZE))) + 1; //TODO: +1 before
-                        int JP = -Convert.ToInt32(Math.Floor(((Y2 - JLIUN) / ICSIZE)) - NROW) + 1;
+                        int IP = Convert.ToInt32(Math.Floor(((X2 - ILIUN) / ICSIZE)));
+                        int JP1 = Convert.ToInt32(Math.Floor(((Y2 - JLIUN) / ICSIZE)));
+                        int JP = NROW - 1 - JP1;
 
                         //computation of coordinates
-                        double IKOO = ILIUN + ((double)IP - 1) * ICSIZE;
-                        double JKOO = JLIUN + (double)(NROW - JP + 1) * ICSIZE;
-                        double gewges = 0;
-                        double gew = 0;
-                        double wert = 0; 
-                        // Console.WriteLine("IP:" + IP);
-                        // Console.WriteLine("JP:" + JP);           
-                        // Console.WriteLine("X2:" + X2);
-                        // Console.WriteLine("Y2:" + Y2);
-                        // Console.WriteLine("IKOO:" + IKOO);
-                        // Console.WriteLine("JKOO:" + JKOO);
-                        // Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0") + " " + ICSIZE);
-                        // throw new Exception();
+                        double IKOO = ILIUN + (double)IP * ICSIZE;
+                        double JKOO = JLIUN + (double)JP1 * ICSIZE;
 
-                        //computation of missing mean value from the 4 corners
-                        for (int IPP = IP; IPP < IP + 2; IPP++)
-                        {
-                            for (int JPP = JP; JPP < JP + 2; JPP++)
-                            {
-                                if (ADH[IPP][JPP] == NODDATA)
-                                {
-                                    gewges = 0;
-                                    gew = 0;
-                                    wert = 0;
-                                    //seeking north/south
-                                    for (int NS = JPP + 1; NS < NROW + 1; NS++)
-                                    {
-                                        if (ADH[IPP][NS] != NODDATA)
-                                        {
-                                            gew = Math.Abs(1 / ((NS - JPP) * Convert.ToDouble(ICSIZE)));
-                                            gewges += gew;
-                                            wert = ADH[IPP][NS] * gew + wert;
-                                            break;
-                                        }
-                                    }
-                                    //seeking north/south
-                                    for (int NS = JPP - 1; NS > 0; NS--)
-                                    {
-                                        if (ADH[IPP][NS] != NODDATA)
-                                        {
-                                            gew = Math.Abs(1 / ((NS - JPP) * Convert.ToDouble(ICSIZE)));
-                                            gewges += gew;
-                                            wert = ADH[IPP][NS] * gew + wert;
-                                            break;
-                                        }
-                                    }
-                                    //seeking west/east
-                                    for (int NS = IPP + 1; NS < NCOL + 1; NS++)
-                                    {
-                                        if (ADH[NS][JPP] != NODDATA)
-                                        {
-                                            gew = Math.Abs(1 / ((NS - IPP) * Convert.ToDouble(ICSIZE)));
-                                            gewges += gew;
-                                            wert = ADH[NS][JPP] * gew + wert;
-                                            break;
-                                        }
-                                    }
-                                    //seeking west/east
-                                    for (int NS = IPP - 1; NS > 0; NS--)
-                                    {
-                                        if (ADH[NS][JPP] != NODDATA)
-                                        {
-                                            gew = Math.Abs(1 / ((NS - IPP) * Convert.ToDouble(ICSIZE)));
-                                            gewges += gew;
-                                            wert = ADH[NS][JPP] * gew + wert;
-                                            break;
-                                        }
-                                    }
-                                    //calculating total weight
-                                    ADH[IPP][JPP] = (float)Math.Max(wert / gewges, 0);
-                                }
-                            }
-                        }
+                        double dummy = Blerp(
+                            (double)ADH[IP][JP],
+                            (double)ADH[IP + 1][JP],
+                            (double)ADH[IP][JP - 1],
+                            (double)ADH[IP + 1][JP - 1],
+                            (X2 - IKOO) / ICSIZE,
+                            (Y2 - JKOO) / ICSIZE
+                        );
 
                         /*
-                        if (ADH[IP][JP] < VALSMIN)
-                        {
-                            VALSMIN = ADH[IP][JP];
-                        }
-                        if (ADH[IP+1][JP] < VALSMIN)
-                        {
-                            VALSMIN = ADH[IP+1][JP];
-                        }
-                        if (ADH[IP][JP+1] < VALSMIN)
-                        {
-                            VALSMIN = ADH[IP][JP+1];
-                        }
-                        if (ADH[IP][JP+1] < VALSMIN)
-                        {
-                            VALSMIN = ADH[IP+1][JP+1];
-                        }
+                        Console.WriteLine(
+                            X2.ToString("0.0") + " " + Y2.ToString("0.0") + " " +  dummy.ToString("0.000") + " " +
+                            ADH[IP-1][JP-1].ToString("0.000") + " " +
+                            ADH[IP][JP-1].ToString("0.000") + " " +
+                            ADH[IP+1][JP-1].ToString("0.000") + " " +
+                            ADH[IP-1][JP].ToString("0.000") + " " +
+                            ADH[IP][JP].ToString("0.000") + " " +
+                            ADH[IP+1][JP].ToString("0.000") + " " +
+                            ADH[IP-1][JP+1].ToString("0.000") + " " +
+                            ADH[IP][JP+1].ToString("0.000") + " " +
+                            ADH[IP+1][JP+1].ToString("0.000") + " " 
+                        );
                         */
 
-                        
-                        
+                        AHE[NI][NJ][0] = dummy;
 
-                        double H12 = ADH[IP][JP] + (ADH[IP][JP + 1] - ADH[IP][JP]) / ICSIZE * (Y2 - JKOO);
-                        double H34 = ADH[IP + 1][JP] + (ADH[IP + 1][JP + 1] - ADH[IP + 1][JP]) / ICSIZE * (Y2 - JKOO);
-                        double dummy = H12 + (H34 - H12) / ICSIZE * (X2 - IKOO);
-                        // dummy =  Math.Max(dummy, 0);
-
-                        double dummy0 = Blerp(
-                            (double)ADH[IP][JP], 
-                            (double)ADH[IP+1][JP], 
-                            (double)ADH[IP][JP+1], 
-                            (double)ADH[IP+1][JP+1], 
-                            (X2 - IKOO) / ICSIZE, 
-                            (Y2 - JKOO) / ICSIZE
-                        );
-                        int IP0 = IP+1;
-                        double dummyX0 = Blerp(
-                            (double)ADH[IP][JP], 
-                            (double)ADH[IP+1][JP], 
-                            (double)ADH[IP][JP+1], 
-                            (double)ADH[IP+1][JP+1], 
-                            (X2 - IKOO) / ICSIZE, 
-                            (Y2 - JKOO) / ICSIZE
-                        );
-                        int IP1 = IP0-1;
-                        double dummyX1 = Blerp(
-                            (double)ADH[IP1][JP], 
-                            (double)ADH[IP1+1][JP], 
-                            (double)ADH[IP1][JP+1], 
-                            (double)ADH[IP1+1][JP+1], 
-                            (X2 - IKOO) / ICSIZE, 
-                            (Y2 - JKOO) / ICSIZE
-                        );
-                        int JP0 = JP+1;
-                        double dummyY0 = Blerp(
-                            (double)ADH[IP][JP0], 
-                            (double)ADH[IP+1][JP0], 
-                            (double)ADH[IP][JP0+1], 
-                            (double)ADH[IP+1][JP0+1], 
-                            (X2 - IKOO) / ICSIZE, 
-                            (Y2 - JKOO) / ICSIZE
-                        );
-                        int JP1 = JP-1;
-                        double dummyY1 = Blerp(
-                            (double)ADH[IP][JP1], 
-                            (double)ADH[IP+1][JP1], 
-                            (double)ADH[IP][JP1+1], 
-                            (double)ADH[IP+1][JP1+1], 
-                            (X2 - IKOO) / ICSIZE, 
-                            (Y2 - JKOO) / ICSIZE
-                        );
-
-                        AHE[NI, NJ, 1] = dummy0;
-
-       
-                        Console.WriteLine("NI:" + NI);
-                        Console.WriteLine("X2:" + X2);
-                        Console.WriteLine("NJ:" + NJ);        
-                        Console.WriteLine("Y2:" + Y2);
-
-                        if((NI==40) & (NJ==10)) {
-                            Console.WriteLine("IP:" + IP);
-                            Console.WriteLine("JP:" + JP);           
-                            Console.WriteLine("NI:" + NI);
-                            Console.WriteLine("NJ:" + NJ);        
-                            Console.WriteLine("X2:" + X2);
-                            Console.WriteLine("Y2:" + Y2);
-                            Console.WriteLine("IKOO:" + IKOO);
-                            Console.WriteLine("JKOO:" + JKOO);
-                            Console.WriteLine("AHE:" + AHE[NI, NJ, 1]);
-                            Console.WriteLine("AHE:" + dummyX0);
-                            Console.WriteLine("AHE:" + dummyY0);
-                            Console.WriteLine("AHE:" + dummyX1);
-                            Console.WriteLine("AHE:" + dummyY1);
-                        }
-
-                        /*
-                        if((NI==192) & (NJ==132)) {
-                            Console.WriteLine("IP:" + IP);
-                            Console.WriteLine("JP:" + JP);           
-                            Console.WriteLine("X2:" + X2);
-                            Console.WriteLine("Y2:" + Y2);
-                            Console.WriteLine("IKOO:" + IKOO);
-                            Console.WriteLine("JKOO:" + JKOO);
-                            Console.WriteLine("AHE:" + AHE[NI, NJ, 1]);
-                            Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0") + " " + ICSIZE);
-                            Console.WriteLine(ADH[IP][JP].ToString("0.00"));      
-                            Console.WriteLine(ADH[IP+1][JP].ToString("0.00"));      
-                            Console.WriteLine(ADH[IP][JP+1].ToString("0.00"));      
-                            Console.WriteLine(ADH[IP+1][JP+1].ToString("0.00"));    
-                            Console.WriteLine(ADH[IP][JP-1].ToString("0.00"));      
-                            Console.WriteLine(ADH[IP+1][JP-1].ToString("0.00"));     
-                            Console.WriteLine(ADH[IP-1][JP].ToString("0.00"));      
-                            Console.WriteLine(ADH[IP-1][JP-1].ToString("0.00"));   
-                        }
-                        */
-
-                        // AHE[NI, NJ, 1] =  Math.Max(dummy, 0);
-                        // Console.WriteLine(dummy0.ToString("0.00"));
-                        // Console.WriteLine((Y2 - JKOO).ToString("0.0") + ' ' + (X2 - IKOO).ToString("0.0"));  
-
-                        if (Math.Abs(dummy - dummy0) > 0.0001F) {
-                            Console.WriteLine(dummy0.ToString("0.0") + ' ' + dummy.ToString("0.0"));
-                        }
-     
                         //minimum of terrain data
-                        if (AHE[NI, NJ, 1] < AHMIN)
+                        if (AHE[NI][NJ][0] < AHMIN)
                         {
-                                AHMIN = AHE[NI, NJ, 1];
+                            AHMIN = AHE[NI][NJ][0];
                         }
 
                         //minimum elevation at the border
-                        if ((ADH[IP][JP] < AHMIN_BORDER) && ((NI == 1) || (NJ == 1) || (NI == NX + 1) || (NJ == NY + 1)))
+                        if ((ADH[IP][JP] < AHMIN_BORDER) && ((NI == 0) || (NJ == 0) || (NI == NX) || (NJ == NY)))
                         {
                             AHMIN_BORDER = ADH[IP][JP];
                         }
                     }
                 }
-                double AH_SUM = 0.0F;
-                for (int NJ = 1; NJ < NY + 2; NJ++)
-                {
-                    for (int NI = 1; NI < NX + 2; NI++)
-                    {
-                        AH_SUM = AH_SUM + AHE[NI, NJ, 1];
 
-                    }
-                }
-
-                Console.WriteLine("VALSMIN: " + Convert.ToString(Math.Round(VALSMIN, 2)).Replace(decsep, "."));
                 Console.WriteLine("AHMIN: " + Convert.ToString(Math.Round(AHMIN, 2)).Replace(decsep, "."));
-                Console.WriteLine("AH_SUM: " + Convert.ToString(Math.Round(AH_SUM, 2)).Replace(decsep, "."));
                 Console.WriteLine("AHMIN_BORDER: " + Convert.ToString(Math.Round(AHMIN_BORDER, 2)).Replace(decsep, "."));
 
                 //coordinates of cells in x-direction
-                int NK = NZ;
-                for (int I = 1; I < NX + 1; I++)
+                for (int I = 0; I < NX; I++)
                 {
                     DDX[I] = Convert.ToDouble(IMODI);
                 }
 
-                for (int J = 1; J < NY + 1; J++)
+                for (int J = 0; J < NY; J++)
                 {
                     DDY[J] = Convert.ToDouble(IMODI);
                 }
 
-                X[1] = 0;
-                for (int I = 2; I < NX + 2; I++)
+                X[0] = 0;
+                for (int I = 1; I < NX + 1; I++)
                 {
                     X[I] = X[I - 1] + DDX[I - 1];
                 }
 
-                for (int I = 1; I < NX; I++)
+                for (int I = 0; I < NX - 1; I++)
                 {
                     ZAX[I] = (X[I + 1] + DDX[I + 1] / 2) - (X[I] + DDX[I] / 2);
                 }
 
-                //flatten topography towards domain borders
-                double abstand = 0;
-                double totaldistance = 0; //horizontal distance between model boundary and the last cell, which is smoothed, yet
-                for (int smooth = Math.Min(SmoothBorderCellNr, NY); smooth > 0; smooth--)
-                {
-                    totaldistance += DDY[smooth];
-                }
-
-                for (int I = 1; I < NX + 2; I++)
-                {
-                    abstand = 0;
-                    for (int smooth = Math.Min(SmoothBorderCellNr, NY); smooth > 0; smooth--)
-                    {
-                        // Console.WriteLine("Smoothing iteration ...");
-                        //AHE[I, smooth, 1] = AHE[I, smooth + 1, 1] - (AHE[I, smooth + 1, 1] - AHMIN) / 4;
-
-                        //lineare Interpolation zum Rand hin
-                        abstand += DDY[smooth];
-                        AHE[I, smooth, 1] = AHE[I, SmoothBorderCellNr + 1, 1] - (AHE[I, SmoothBorderCellNr + 1, 1] - AHMIN_BORDER) * abstand / totaldistance;
-                    }
-
-                    abstand = 0;
-                    for (int smooth = Math.Min(SmoothBorderCellNr, NY); smooth > 0; smooth--)
-                    {
-                        // Console.WriteLine("Smoothing iteration ...");
-                        //AHE[I, NY - smooth + 2, 1] = AHE[I, NY - smooth + 1, 1] - (AHE[I, NY - smooth + 1, 1] - AHMIN) / 4;
-
-                        //lineare Interpolation zum Rand hin
-                        abstand += DDY[NY - smooth + 1];
-                        AHE[I, NY - smooth + 2, 1] = AHE[I, NY - SmoothBorderCellNr + 1, 1] - (AHE[I, NY - SmoothBorderCellNr + 1, 1] - AHMIN_BORDER) * abstand / totaldistance;
-                    }
-
-                }
-
-                totaldistance = 0;
-                for (int smooth = Math.Min(SmoothBorderCellNr, NX); smooth > 0; smooth--)
-                {
-                    totaldistance += DDX[smooth];
-                }
-
-                for (int J = 1; J < NY + 2; J++)
-                {
-                    abstand = 0;
-                    for (int smooth = Math.Min(SmoothBorderCellNr, NX); smooth > 0; smooth--)
-                    {
-                        // Console.WriteLine("Smoothing iteration ...");
-                        abstand += DDX[smooth];
-                        AHE[smooth, J, 1] = AHE[SmoothBorderCellNr + 1, J, 1] - (AHE[SmoothBorderCellNr + 1, J, 1] - AHMIN_BORDER) * abstand / totaldistance;
-                    }
-                    abstand = 0;
-                    for (int smooth = Math.Min(SmoothBorderCellNr, NX); smooth > 0; smooth--)
-                    {
-                        // Console.WriteLine("Smoothing iteration ...");
-                        abstand += DDY[NY - smooth + 1];
-                        AHE[NX - smooth + 2, J, 1] = AHE[NX - SmoothBorderCellNr + 1, J, 1] - (AHE[NX - SmoothBorderCellNr + 1, J, 1] - AHMIN_BORDER) * abstand / totaldistance;
-                    }
-                }
-
-
                 //minimum and maximum elevations
-                for (int J = 1; J < NY + 2; J++)
+                for (int J = 0; J < NY + 1; J++)
                 {
-                    for (int I = 1; I < NX + 2; I++)
+                    for (int I = 0; I < NX + 1; I++)
                     {
-                        if (AHE[I, J, 1] < AHMIN)
+                        if (AHE[I][J][0] < AHMIN)
                         {
-                            AHMIN = AHE[I, J, 1];
+                            AHMIN = AHE[I][J][0];
                         }
 
-                        if (AHE[I, J, 1] > AHMAX)
+                        if (AHE[I][J][0] > AHMAX)
                         {
-                            AHMAX = AHE[I, J, 1];
+                            AHMAX = AHE[I][J][0];
                         }
                     }
                 }
@@ -598,111 +347,117 @@ namespace Mesh
                 Console.WriteLine("Maximum elevation: " + Convert.ToString(Math.Round(AHMAX, 0)).Replace(decsep, "."));
 
                 Console.WriteLine("Number of cells in E-W direction: " + Convert.ToString(NX));
-                Console.WriteLine("Cell length in E-W direction: " + Convert.ToString(DDX[1]));
-                Console.WriteLine("E-W extents: " + Convert.ToString(Math.Round(X[NX + 1], 0)));
+                Console.WriteLine("Cell length in E-W direction: " + Convert.ToString(DDX[0]));
+                Console.WriteLine("E-W extents: " + Convert.ToString(Math.Round(X[NX], 0)));
 
                 //coordinates of cells in y-direction
-                Y[1] = 0;
-                for (int J = 2; J < NY + 2; J++)
+                Y[0] = 0;
+                for (int J = 1; J < NY + 1; J++)
                 {
                     Y[J] = Y[J - 1] + DDY[J - 1];
                 }
 
-                for (int J = 1; J < NY; J++)
+                for (int J = 0; J < NY - 1; J++)
                 {
                     ZAY[J] = (Y[J + 1] + DDY[J + 1] / 2) - (Y[J] + DDY[J] / 2);
                 }
 
                 Console.WriteLine("Number of cells in S-N direction: " + Convert.ToString(NY));
-                Console.WriteLine("Cell length in S-N direction: " + Convert.ToString(DDY[1]));
-                Console.WriteLine("S-N extents: " + Convert.ToString(Math.Round(Y[NY + 1], 0)));
+                Console.WriteLine("Cell length in S-N direction: " + Convert.ToString(DDY[0]));
+                Console.WriteLine("S-N extents: " + Convert.ToString(Math.Round(Y[NY], 0)));
 
                 //coordinates of cells in z-direction
-                Z[1] = AHMIN; // Minimum elevation
-                int K = 1;
+                Z[0] = AHMIN; // Minimum elevation
+                int K = 0;
                 Console.WriteLine("Z" + Convert.ToString(K) + "= " + Convert.ToString(Math.Round(Z[K], 1)).Replace(decsep, ".") + " m");
 
-                for (K = 2; K < 2 + Program.NrConstantHeightCells; K++)
+                for (K = 1; K < Program.NrConstantHeightCells + 1; K++)
                 {
                     Z[K] = Z[K - 1] + DDZ;
+                    Console.WriteLine("Z" + Convert.ToString(K) + "= " + Convert.ToString(Math.Round(Z[K], 1)) + " m");
                 }
-                for (K = 2 + Program.NrConstantHeightCells; K < NZ + 2; K++)
+                for (K = Program.NrConstantHeightCells + 1; K < NZ + 1; K++)
                 {
-                    Z[K] = Z[K - 1] + DDZ * Math.Pow(ADZ, K - 2);
+                    Z[K] = Z[K - 1] + DDZ * Math.Pow(ADZ, K - Program.NrConstantHeightCells);
+                    Console.WriteLine("Z" + Convert.ToString(K) + "= " + Convert.ToString(Math.Round(Z[K], 1)) + " m");
                 }
+
+                double ZTOP = Z[NZ];
 
                 for (K = 1; K < NZ + 1; K++)
                 {
-                    DW[K] = Z[K + 1] - Z[K];
-                    Console.WriteLine("Z" + Convert.ToString(K + 1) + "= " + Convert.ToString(Math.Round(Z[K + 1], 1)) + " m");
+                    DW[K - 1] = Z[K] - Z[K - 1];
                 }
+
+
 
                 //top of model domain needs to be larger than 3 times the maximum elevation
-                if ((Z[NZ + 1] - AHMIN) < (AHMAX - AHMIN) * 3)
+                if ((ZTOP - AHMIN) < (AHMAX - AHMIN) * 3)
                 {
-                    throw new Exception("Height of the model domain is too low.\nIncrease vertical streching factor or\nIncrease the number of vertical grid points or\nIncrease the height of the first layer");
+                    Console.WriteLine("Height of the model domain is too low.\nIncrease vertical streching factor or\nIncrease the number of vertical grid points or\nIncrease the height of the first layer");
                 }
 
-                double DWMAX = Z[NZ + 1] - AHMIN;
+                double DWMAX = ZTOP - AHMIN;
 
                 //computation of the heights of the cell corners
-                for (int I = 1; I < NX + 2; I++)
+                for (int I = 0; I < NX + 1; I++)
                 {
-                    for (int J = 1; J < NY + 2; J++)
+                    for (int J = 0; J < NY + 1; J++)
                     {
-                        for (K = 2; K < NZ + 2; K++)
+                        for (K = 1; K < NZ + 1; K++)
                         {
-                            AHE[I, J, K] = AHE[I, J, K - 1] + DW[K - 1] / DWMAX * (Z[NZ + 1] - AHE[I, J, 1]);
+                            // (ZMAX - AH) /
+                            AHE[I][J][K] = AHE[I][J][K - 1] + DW[K - 1] / DWMAX * (ZTOP - AHE[I][J][0]);
                         }
                     }
                 }
 
                 //computation of areas and volumes
-                for (int I = 1; I < NX + 2; I++)
+                for (int I = 0; I < NX + 1; I++)
                 {
-                    for (int J = 1; J < NY + 1; J++)
+                    for (int J = 0; J < NY; J++)
                     {
-                        for (K = 1; K < NZ + 1; K++)
+                        for (K = 0; K < NZ; K++)
                         {
-                            AREAX[I, J, K] = (AHE[I, J, K + 1] - AHE[I, J, K] + AHE[I, J + 1, K + 1] - AHE[I, J + 1, K]) * 0.5 * DDY[J];
+                            AREAX[I][J][K] = (AHE[I][J][K + 1] - AHE[I][J][K] + AHE[I][J + 1][K + 1] - AHE[I][J + 1][K]) * 0.5 * DDY[J];
                         }
                     }
                 }
 
-                for (int I = 1; I < NX + 1; I++)
+                for (int I = 0; I < NX; I++)
                 {
-                    for (int J = 1; J < NY + 2; J++)
+                    for (int J = 0; J < NY + 1; J++)
                     {
-                        for (K = 1; K < NZ + 1; K++)
+                        for (K = 0; K < NZ; K++)
                         {
-                            AREAY[I, J, K] = (AHE[I, J, K + 1] - AHE[I, J, K] + AHE[I + 1, J, K + 1] - AHE[I + 1, J, K]) * 0.5 * DDX[I];
+                            AREAY[I][J][K] = (AHE[I][J][K + 1] - AHE[I][J][K] + AHE[I + 1][J][K + 1] - AHE[I + 1][J][K]) * 0.5 * DDX[I];
                         }
                     }
                 }
 
-                for (int I = 1; I < NX + 1; I++)
+                for (int I = 0; I < NX; I++)
                 {
-                    for (int J = 1; J < NY + 1; J++)
+                    for (int J = 0; J < NY; J++)
                     {
-                        for (K = 1; K < NZ + 2; K++)
+                        for (K = 0; K < NZ + 1; K++)
                         {
-                            AREAZX[I, J, K] = ((AHE[I, J + 1, K] - AHE[I + 1, J + 1, K]) + (AHE[I, J, K] - AHE[I + 1, J, K])) * 0.5 * DDY[J];
-                            AREAZY[I, J, K] = ((AHE[I + 1, J, K] - AHE[I + 1, J + 1, K]) + (AHE[I, J, K] - AHE[I, J + 1, K])) * 0.5 * DDX[I];
-                            AREAZ[I, J, K] = Math.Sqrt(DDX[I] * DDX[I] * DDY[J] * DDY[J] + AREAZX[I, J, K] * AREAZX[I, J, K] + AREAZY[I, J, K] * AREAZY[I, J, K]);
+                            AREAZX[I][J][K] = ((AHE[I][J + 1][K] - AHE[I + 1][J + 1][K]) + (AHE[I][J][K] - AHE[I + 1][J][K])) * 0.5 * DDY[J];
+                            AREAZY[I][J][K] = ((AHE[I + 1][J][K] - AHE[I + 1][J + 1][K]) + (AHE[I][J][K] - AHE[I][J + 1][K])) * 0.5 * DDX[I];
+                            AREAZ[I][J][K] = Math.Sqrt(DDX[I] * DDX[I] * DDY[J] * DDY[J] + AREAZX[I][J][K] * AREAZX[I][J][K] + AREAZY[I][J][K] * AREAZY[I][J][K]);
                         }
                     }
                 }
 
-                for (int I = 1; I < NX + 1; I++)
+                for (int I = 0; I < NX; I++)
                 {
-                    for (int J = 1; J < NY + 1; J++)
+                    for (int J = 0; J < NY; J++)
                     {
-                        for (K = 1; K < NZ + 1; K++)
+                        for (K = 0; K < NZ; K++)
                         {
-                            VOL[I, J, K] = ((2.0 * AHE[I, J, K + 1] + AHE[I + 1, J, K + 1] + 2.0 * AHE[I + 1, J + 1, K + 1] + AHE[I, J + 1, K + 1]) - (2.0 * AHE[I, J, K] + AHE[I + 1, J, K] + 2.0 * AHE[I + 1, J + 1, K] + AHE[I, J + 1, K])) / 6.0 * DDX[I] * DDY[J];
-                            ZSP[I, J, K] = (AHE[I, J, K + 1] + AHE[I + 1, J, K + 1] + AHE[I + 1, J + 1, K + 1] + AHE[I, J + 1, K + 1] + AHE[I, J, K] + AHE[I + 1, J, K] + AHE[I + 1, J + 1, K] + AHE[I, J + 1, K]) / 8.0;
+                            VOL[I][J][K] = ((2.0 * AHE[I][J][K + 1] + AHE[I + 1][J][K + 1] + 2.0 * AHE[I + 1][J + 1][K + 1] + AHE[I][J + 1][K + 1]) - (2.0 * AHE[I][J][K] + AHE[I + 1][J][K] + 2.0 * AHE[I + 1][J + 1][K] + AHE[I][J + 1][K])) / 6.0 * DDX[I] * DDY[J];
+                            ZSP[I][J][K] = (AHE[I][J][K + 1] + AHE[I + 1][J][K + 1] + AHE[I + 1][J + 1][K + 1] + AHE[I][J + 1][K + 1] + AHE[I][J][K] + AHE[I + 1][J][K] + AHE[I + 1][J + 1][K] + AHE[I][J + 1][K]) / 8.0;
                         }
-                        AH[I, J] = (AHE[I, J, 1] + AHE[I + 1, J, 1] + AHE[I + 1, J + 1, 1] + AHE[I, J + 1, 1]) / 4.0;
+                        AH[I][J] = (AHE[I][J][0] + AHE[I + 1][J][0] + AHE[I + 1][J + 1][0] + AHE[I][J + 1][0]) / 4.0;
                     }
                 }
 
@@ -710,7 +465,6 @@ namespace Mesh
                 GGeomFileIO ggeom = new GGeomFileIO
                 {
                     PathWindfield = "ggeom.asc",
-                    WriteCompressedFile = _writeCompressedFile,
                     NX = NX,
                     NY = NY,
                     NZ = NZ,

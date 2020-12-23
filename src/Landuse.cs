@@ -34,18 +34,18 @@ namespace Mesh
         public int NX { set { _NX = value; } }
         private int _NY;
         public int NY { set { _NY = value; } }
-        private double[,] _RHOB;
-        public double[,] RHOB { set { _RHOB = value; } get { return _RHOB; } }
-        private double[,] _ALAMBDA;
-        public double[,] ALAMBDA { set { _ALAMBDA = value; } get { return _ALAMBDA; } }
-        private double[,] _Z0;
-        public double[,] Z0 { set { _Z0 = value; } get { return _Z0; } }
-        private double[,] _FW;
-        public double[,] FW { set { _FW = value; } get { return _FW; } }
-        private double[,] _EPSG;
-        public double[,] EPSG { set { _EPSG = value; } get { return _EPSG; } }
-        private double[,] _ALBEDO;
-        public double[,] ALBEDO { set { _ALBEDO = value; } get { return _ALBEDO; } }
+        private double[][] _RHOB;
+        public double[][] RHOB { set { _RHOB = value; } get { return _RHOB; } }
+        private double[][] _ALAMBDA;
+        public double[][] ALAMBDA { set { _ALAMBDA = value; } get { return _ALAMBDA; } }
+        private double[][] _Z0;
+        public double[][] Z0 { set { _Z0 = value; } get { return _Z0; } }
+        private double[][] _FW;
+        public double[][] FW { set { _FW = value; } get { return _FW; } }
+        private double[][] _EPSG;
+        public double[][] EPSG { set { _EPSG = value; } get { return _EPSG; } }
+        private double[][] _ALBEDO;
+        public double[][] ALBEDO { set { _ALBEDO = value; } get { return _ALBEDO; } }
         private int _IKOOA;
         public int IKOOA { set { _IKOOA = value; } }
         private int _JKOOA;
@@ -334,57 +334,40 @@ namespace Mesh
                 }
             }
 
-
-            //reading field sizes from file GRAMM.geb
-            StreamReader reader = new StreamReader("GRAMM.geb");
-            string[] text = new string[5];
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            int NX = Convert.ToInt32(text[0]);  //number of horizontal cells in x direction
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            int NY = Convert.ToInt32(text[0]);  //number of horizontal cells in y direction
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            int NZ = Convert.ToInt32(text[0]);  //number of vertical cells in z direction
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            double xsimin = Convert.ToDouble(text[0].Replace(".", decsep)); //western boarder
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            double xsimax = Convert.ToDouble(text[0].Replace(".", decsep)); //eastern boarder
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            double etamin = Convert.ToDouble(text[0].Replace(".", decsep)); //southern boarder
-            text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-            double etamax = Convert.ToDouble(text[0].Replace(".", decsep)); //northern boarder
-            reader.Close();
-
-            int DX = Convert.ToInt32((xsimax - xsimin) / NX);
-            int DY = Convert.ToInt32((etamax - etamin) / NY);
+            int NX = Program.GrammDomRect.NX;
+            int NY = Program.GrammDomRect.NY;
+            int NZ = Program.GrammDomRect.NZ;
+            double xsimin = Program.GrammDomRect.West;
+            double xsimax = Program.GrammDomRect.East;
+            double etamin = Program.GrammDomRect.South;
+            double etamax = Program.GrammDomRect.North;
+            int DX = Program.GrammDomRect.DX;
+            int DY = Program.GrammDomRect.DY;
 
             int IKOOA = Convert.ToInt32(xsimin);
             int JKOOA = Convert.ToInt32(etamin);
+            int IKOOE = IKOOA + DX * NX;
+            int JKOOE = JKOOA + DY * NY;
 
-            int NX1 = NX + 2;
-            int NY1 = NY + 2;
-            int NZ1 = NZ + 2;
-            int NX2 = NX + 2;
-            int NY2 = NY + 2;
-            int NZ2 = NZ + 2;
-
-            //double[,,] LUSNR = new double[NX2, NY2, 1000];  //Corine-Landuse-numbers
-            //Int16[, ,] LUSPROZ = new Int16[NX2, NY2, 1000];  //Corine-Landuse-frequencies within the chosen cell
             Int16[][][] LUSPROZ = CreateArray<Int16[][]>(1, () => CreateArray<Int16[]>(1, () => new Int16[1]));        //Absolute temperature in K
-            LUSPROZ = CreateArray<Int16[][]>(NX2, () => CreateArray<Int16[]>(NY2, () => new Int16[1000]));
+            LUSPROZ = CreateArray<Int16[][]>(NX, () => CreateArray<Int16[]>(NY, () => new Int16[1000]));
 
-            double[,] PROZGES = new double[NX2, NY2];  //Corine-Landuse-frequencies within the chosen cell
-            double[,] RHOB = new double[NX1, NY1];  //soil density
-            double[,] ALAMBDA = new double[NX1, NY1];  //soil temperature leitungsfaehigkeit
-            double[,] ALBEDO = new double[NX1, NY1];  //surface albedo
-            double[,] AWQ = new double[NX1, NY1];  //surface albedo
-            double[,] Z0 = new double[NX1, NY1];  //surface roughness length
-            double[,] FW = new double[NX1, NY1];  //soil moisture content
-            double[,] EPSG = new double[NX1, NY1];  //surface emissivity
+            double[][] PROZGES = CreateArray<double[]>(NX, () => new double[NY]);  // Corine-Landuse-frequencies within the chosen cell
+            double[][] RHOB = CreateArray<double[]>(NX, () => new double[NY]);  //soil density
+            double[][] ALAMBDA = CreateArray<double[]>(NX, () => new double[NY]);  //soil temperature leitungsfaehigkeit
+            double[][] ALBEDO = CreateArray<double[]>(NX, () => new double[NY]);  //surface albedo
+            double[][] AWQ = CreateArray<double[]>(NX, () => new double[NY]);  //surface albedo
+            double[][] Z0 = CreateArray<double[]>(NX, () => new double[NY]);  //surface roughness length
+            double[][] FW = CreateArray<double[]>(NX, () => new double[NY]);  //soil moisture content
+            double[][] EPSG = CreateArray<double[]>(NX, () => new double[NY]);  //surface emissivity
+            Int16[][] CLC = CreateArray<Int16[]>(NX, () => new Int16[NY]);  // Top corine-Landuse in cell 
+
             double NODDATA = 0;
 
             if (FileName != "Default-Values")
             {
-                reader = new StreamReader(FileName);
+                StreamReader reader = new StreamReader(FileName);
+                string[] text = new string[5];
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                 int NCOL = Convert.ToInt32(text[1]);  //number of cells in x-direction of topography file
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
@@ -396,57 +379,51 @@ namespace Mesh
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                 double ICSIZE = Convert.ToDouble(text[1].Replace(".", decsep));  //grid size
                 text = reader.ReadLine().Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-                NODDATA = Convert.ToDouble(text[1].Replace(".", decsep));  //no-data value
-
-                int IKOOE = IKOOA + DX * NX;
-                int JKOOE = JKOOA + DY * NY;
-
+                NODDATA = Convert.ToDouble(text[1].Replace(".", decsep));  //no-data value   
                 Console.WriteLine(Path.GetFileName(FileName) + "- East border: " + Convert.ToString(ILIUN));
                 Console.WriteLine(Path.GetFileName(FileName) + "- West border: " + Convert.ToString(ILIUN + ICSIZE * NROW));
                 Console.WriteLine(Path.GetFileName(FileName) + "- South border: " + Convert.ToString(JLIUN));
                 Console.WriteLine(Path.GetFileName(FileName) + "- North border: " + Convert.ToString(JLIUN + ICSIZE * NCOL));
-                // Console.WriteLine("Model Domain East border: " + Convert.ToString(IKOOA));
-                // Console.WriteLine("Model Domain West border: " + Convert.ToString(IKOOE));
-                // Console.WriteLine("Model Domain South border: " + Convert.ToString(JKOOA));
-                // Console.WriteLine("Model Domain North border: " + Convert.ToString(JKOOE));
                 Console.WriteLine(" ");
 
+                // Data is shifted to CELL CENTERS
+                ILIUN = ILIUN + 0.5 * ICSIZE;
+                JLIUN = JLIUN + 0.5 * ICSIZE;
+
                 //reading landuse file
-                int J = NY;
-                text = new string[NCOL + 2];
-                int[] ADH = new int[NCOL + 1];
+                text = new string[NCOL];
+                int[] ADH = new int[NCOL];
 
-                for (int NNJ = 1; NNJ < NROW + 1; NNJ++)
+                for (int NNJ = 0; NNJ < NROW; NNJ++)
                 {
-
-
                     if (NNJ % 40 == 0)
                     {
-                        Console.WriteLine("    Reading landuse file " + ((int)((float)NNJ / (NROW + 2) * 100F)).ToString() + "%");
+                        Console.WriteLine("    Reading landuse file " + ((int)((float)(NNJ + 1) / (NROW) * 100F)).ToString() + "%");
                     }
 
-                    int I = 1;
-                    int JKOO = Convert.ToInt32(JLIUN + (NROW - NNJ + 1) * ICSIZE);
+                    int JKOO = Convert.ToInt32(JLIUN + (NROW - NNJ) * ICSIZE);
+
+                    //compute cell y-index
+                    // We start from the top !!
+                    int J = Convert.ToInt32(Math.Floor(((double)(JKOO - JKOOA) / DY)));
+                    // J = NY - 1 - J;
                     string line_text = reader.ReadLine();
 
                     //check if landuse data point is within the model domain
-                    if ((JKOO >= JKOOA) && (JKOO <= JKOOE))
+                    if ((J >= 0) && (J < NY))
                     {
                         text = line_text.Split(new char[] { ' ', '\t', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-                        for (int NNI = 1; NNI < NCOL + 1; NNI++)
+                        for (int NNI = 0; NNI < NCOL; NNI++)
                         {
-                            text[NNI - 1] = StrgToICult(text[NNI - 1]); // Kuntner
+                            text[NNI] = StrgToICult(text[NNI]); // Kuntner
                             try
                             {
-                                ADH[NNI] = int.Parse(text[NNI - 1], System.Globalization.CultureInfo.InvariantCulture);
+                                ADH[NNI] = int.Parse(text[NNI], System.Globalization.CultureInfo.InvariantCulture);
                             }
                             catch
                             { }
                         }
-
-                        // ADH[NNI] = Convert.ToInt32(text[NNI - 1].Replace(".", form1.decsep));
-                        for (int NNI = 1; NNI < NCOL + 1; NNI++)
+                        for (int NNI = 0; NNI < NCOL; NNI++)
                         {
                             //check if corine landuse classes are correct
                             if ((ADH[NNI] < 0) || (ADH[NNI] > 999))
@@ -462,46 +439,16 @@ namespace Mesh
                                     throw new IOException();
                                 }
                             }
-                            int IKOO = Convert.ToInt32(ILIUN + (NNI - 1) * ICSIZE);
+
+                            int IKOO = Convert.ToInt32(ILIUN + NNI * ICSIZE);
+                            //compute cell x-index
+                            int I = Convert.ToInt32(Math.Floor(((double)(IKOO - IKOOA) / DX)));
+
                             //check if landuse data point is within the model domain
-                            if ((IKOO >= IKOOA) && (IKOO <= IKOOE) && (JKOO >= JKOOA) && (JKOO <= JKOOE))
+                            if ((I >= 0) && (I < NX))
                             {
-                                //compute cell indices
-                                if (IKOO >= IKOOA + DX * I)
-                                {
-                                    I += 1;
-                                }
-
-                                if (JKOO <= JKOOA + DY * (J - 1))
-                                {
-                                    J -= 1;
-                                }
-
                                 int LUSDUM = ADH[NNI];
-
-                                /*
-                            //which landuse data exist
-                            for (int NR = 0; NR < 1000; NR++)
-                            {
-                                if ((LUSDUM == LUSNR[I, J, NR]))
-                                    break;
-                                if ((LUSDUM != LUSNR[I, J, NR]) && (LUSNR[I, J, NR] == 0))
-                                {
-                                    LUSNR[I, J, NR] = LUSDUM;
-                                    break;
-                                }
-                            }
-
-                            //compute share of landuse classes within cell
-                            PROZGES[I, J] = PROZGES[I, J] + 1;
-                            for (int NR = 0; NR < 1000; NR++)
-                            {
-                                if (LUSDUM == LUSNR[I, J, NR])
-                                    LUSPROZ[I, J, NR] = LUSPROZ[I, J, NR] + 1;
-                            }
-                                 */
-
-                                PROZGES[I, J] = PROZGES[I, J] + 1;
+                                PROZGES[I][J] = PROZGES[I][J] + 1;
                                 LUSPROZ[I][J][LUSDUM]++;
                             }
                         }
@@ -514,55 +461,65 @@ namespace Mesh
                 double CPBOD = 900;
 
                 //computation of mean values for each cell
-                for (int I = 1; I < NX1; I++)
+                for (int I = 0; I < NX; I++)
                 {
-
-                    for (J = 1; J < NY1; J++)
+                    for (int J = 0; J < NY; J++)
                     {
-                        ALAMBDA[I, J] = 0;
-                        AWQ[I, J] = 0;
-                        Z0[I, J] = 0;
-                        FW[I, J] = 0;
-                        EPSG[I, J] = 0;
-                        ALBEDO[I, J] = 0;
+                        ALAMBDA[I][J] = 0;
+                        AWQ[I][J] = 0;
+                        Z0[I][J] = 0;
+                        FW[I][J] = 0;
+                        EPSG[I][J] = 0;
+                        ALBEDO[I][J] = 0;
+                        Int16 top_clc = -9999;
+                        CLC[I][J] = top_clc;
 
                         double TERMPROZ = 0;
 
-                        if (PROZGES[I, J] == 0)
+                        if (PROZGES[I][J] == 0)
                         {
-                            RHOB[I, J] = ALAMBDAT[0];
-                            ALAMBDA[I, J] = ALAMBDAL[0];
-                            Z0[I, J] = Z0L[0];
-                            FW[I, J] = FWL[0];
-                            EPSG[I, J] = EPSGL[0];
-                            ALBEDO[I, J] = AGL[0];
+                            RHOB[I][J] = ALAMBDAT[0];
+                            ALAMBDA[I][J] = ALAMBDAL[0];
+                            Z0[I][J] = Z0L[0];
+                            FW[I][J] = FWL[0];
+                            EPSG[I][J] = EPSGL[0];
+                            ALBEDO[I][J] = AGL[0];
                         }
                         else
                         {
-                            TERMPROZ = 1 / PROZGES[I, J];
+                            TERMPROZ = 1 / PROZGES[I][J];
+
+                            Int16 top_count = 0;
                             for (int NR = 0; NR <= 999; NR++)
                             {
-                                RHOB[I, J] = RHOB[I, J] + ALAMBDAT[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
-                                ALAMBDA[I, J] = ALAMBDA[I, J] + ALAMBDAL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
-                                Z0[I, J] = Z0[I, J] + Z0L[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
-                                FW[I, J] = FW[I, J] + FWL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
-                                EPSG[I, J] = EPSG[I, J] + EPSGL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
-                                ALBEDO[I, J] = ALBEDO[I, J] + AGL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                if (LUSPROZ[I][J][NR] > top_count)
+                                {
+                                    top_count = LUSPROZ[I][J][NR];
+                                    top_clc = (Int16)NR;
+                                }
+                                RHOB[I][J] = RHOB[I][J] + ALAMBDAT[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                ALAMBDA[I][J] = ALAMBDA[I][J] + ALAMBDAL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                Z0[I][J] = Z0[I][J] + Z0L[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                FW[I][J] = FW[I][J] + FWL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                EPSG[I][J] = EPSG[I][J] + EPSGL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
+                                ALBEDO[I][J] = ALBEDO[I][J] + AGL[NR] * (float)LUSPROZ[I][J][NR] * TERMPROZ;
                             }
+                            CLC[I][J] = top_clc;
                         }
 
                         //check if a value has been assigned, otherwise use default values
-                        if (ALBEDO[I, J] == 0)
+                        if (ALBEDO[I][J] == 0)
                         {
-                            RHOB[I, J] = ALAMBDAT[0];
-                            ALAMBDA[I, J] = ALAMBDAL[0];
-                            Z0[I, J] = Z0L[0];
-                            FW[I, J] = FWL[0];
-                            EPSG[I, J] = EPSGL[0];
-                            ALBEDO[I, J] = AGL[0];
+                            RHOB[I][J] = ALAMBDAT[0];
+                            ALAMBDA[I][J] = ALAMBDAL[0];
+                            Z0[I][J] = Z0L[0];
+                            FW[I][J] = FWL[0];
+                            EPSG[I][J] = EPSGL[0];
+                            ALBEDO[I][J] = AGL[0];
+                            CLC[I][J] = -9999;
                         }
 
-                        RHOB[I, J] = ALAMBDA[I, J] / RHOB[I, J] / CPBOD;
+                        RHOB[I][J] = ALAMBDA[I][J] / RHOB[I][J] / CPBOD;
                     }
                 }
             }
@@ -573,77 +530,86 @@ namespace Mesh
                 double CPBOD = 900;
 
                 //computation of mean values for each cell
-                for (int I = 1; I < NX1; I++)
+                for (int I = 0; I < NX; I++)
                 {
 
-                    for (int J = 1; J < NY1; J++)
+                    for (int J = 0; J < NY; J++)
                     {
-                        ALAMBDA[I, J] = 0;
-                        AWQ[I, J] = 0;
-                        Z0[I, J] = 0;
-                        FW[I, J] = 0;
-                        EPSG[I, J] = 0;
-                        ALBEDO[I, J] = 0;
+                        ALAMBDA[I][J] = 0;
+                        AWQ[I][J] = 0;
+                        Z0[I][J] = 0;
+                        FW[I][J] = 0;
+                        EPSG[I][J] = 0;
+                        ALBEDO[I][J] = 0;
+                        CLC[I][J] = -9999;
 
-                        RHOB[I, J] = ALAMBDAT[0];
-                        ALAMBDA[I, J] = ALAMBDAL[0];
-                        Z0[I, J] = Z0L[0];
-                        FW[I, J] = FWL[0];
-                        EPSG[I, J] = EPSGL[0];
-                        ALBEDO[I, J] = AGL[0];
+                        RHOB[I][J] = ALAMBDAT[0];
+                        ALAMBDA[I][J] = ALAMBDAL[0];
+                        Z0[I][J] = Z0L[0];
+                        FW[I][J] = FWL[0];
+                        EPSG[I][J] = EPSGL[0];
+                        ALBEDO[I][J] = AGL[0];
 
-                        RHOB[I, J] = ALAMBDA[I, J] / RHOB[I, J] / CPBOD;
+                        RHOB[I][J] = ALAMBDA[I][J] / RHOB[I][J] / CPBOD;
                     }
                 }
             }
 
             using (StreamWriter writer = new StreamWriter("landuse.asc"))
             {
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(RHOB[i, j], 0), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(RHOB[i][j], 0), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(ALAMBDA[i, j], 3), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(ALAMBDA[i][j], 3), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(Z0[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(Z0[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(FW[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(FW[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(EPSG[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(EPSG[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < NY + 1; j++)
+                for (int j = 0; j < NY; j++)
                 {
-                    for (int i = 1; i < NX + 1; i++)
+                    for (int i = 0; i < NX; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(ALBEDO[i, j], 3), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(ALBEDO[i][j], 3), ic) + " ");
+                    }
+                }
+                writer.WriteLine();
+                for (int j = 0; j < NY; j++)
+                {
+                    for (int i = 0; i < NX; i++)
+                    {
+                        writer.Write(Convert.ToString(CLC[i][j]) + " ");
                     }
                 }
             }
@@ -701,6 +667,12 @@ namespace Mesh
                 Result.DblArr = ALBEDO;
                 Result.FileName = "albedo.txt";
                 Result.WriteDblArrResult();
+
+                //output of main clc
+                Result.Unit = string.Empty;
+                Result.IntArr = CLC;
+                Result.FileName = "clc.txt";
+                Result.WriteIntArrResult();
             }
 
             Console.WriteLine("Landuse File successfully generated.");
@@ -725,19 +697,19 @@ namespace Mesh
                     {
                         using (StreamReader r = new StreamReader(fs))
                         {
-                            _RHOB = new double[_NX + 1, _NY + 1];
-                            _ALAMBDA = new double[_NX + 1, _NY + 1];
-                            _Z0 = new double[_NX + 1, _NY + 1];
-                            _FW = new double[_NX + 1, _NY + 1];
-                            _EPSG = new double[_NX + 1, _NY + 1];
-                            _ALBEDO = new double[_NX + 1, _NY + 1];
+                            _RHOB = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
+                            _ALAMBDA = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
+                            _Z0 = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
+                            _FW = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
+                            _EPSG = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
+                            _ALBEDO = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             int n = 0;
                             for (int j = 1; j < _NY + 1; j++)
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _RHOB[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _RHOB[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -747,7 +719,7 @@ namespace Mesh
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _ALAMBDA[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _ALAMBDA[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -757,7 +729,7 @@ namespace Mesh
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _Z0[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _Z0[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -767,7 +739,7 @@ namespace Mesh
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _FW[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _FW[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -777,7 +749,7 @@ namespace Mesh
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _EPSG[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _EPSG[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -787,7 +759,7 @@ namespace Mesh
                             {
                                 for (int i = 1; i < _NX + 1; i++)
                                 {
-                                    _ALBEDO[i, j] = Convert.ToDouble(text[n].Replace(".", decsep));
+                                    _ALBEDO[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
                                 }
                             }
@@ -816,7 +788,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_RHOB[i, j], 0), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_RHOB[i][j], 0), ic) + " ");
                     }
                 }
                 writer.WriteLine();
@@ -824,7 +796,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_ALAMBDA[i, j], 3), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_ALAMBDA[i][j], 3), ic) + " ");
                     }
                 }
                 writer.WriteLine();
@@ -832,7 +804,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_Z0[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_Z0[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
@@ -840,7 +812,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_FW[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_FW[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
@@ -848,7 +820,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_EPSG[i, j], 4), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_EPSG[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
@@ -856,7 +828,7 @@ namespace Mesh
                 {
                     for (int i = 1; i < _NX + 1; i++)
                     {
-                        writer.Write(Convert.ToString(Math.Round(_ALBEDO[i, j], 3), ic) + " ");
+                        writer.Write(Convert.ToString(Math.Round(_ALBEDO[i][j], 3), ic) + " ");
                     }
                 }
                 writer.WriteLine();
