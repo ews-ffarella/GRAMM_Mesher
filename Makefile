@@ -5,18 +5,13 @@ build:
 .PHONY: publish
 publish:
 	dotnet publish src -r win10-x64 -c Release -p:PublishSingleFile=true -p:PublishTrimmed=true
+	cp -f ./src/bin/Release/netcoreapp3.1/win10-x64/publish/GRAMM_Mesher.exe ../ValidationCases/Bin
 
 .PHONY: clean
 clean:
 	dotnet clean src
 
-.PHONY: test_a_coarse
-test_a_coarse:
-	dotnet run --project ./src "./test/Askervein_coarse"
-	# find "./test/Askervein_coarse" -type f -name "*.txt" | xargs rm -f
-
-
-.PHONY: test_a_fine
-test_a_fine:
-	dotnet run --project ./src "./test/Askervein_fine"
+.PHONY: test_askervein
+test_askervein:
+	dotnet run --project ./src "./test/Askervein_50m"
 	# find "./test/Askervein_coarse" -type f -name "*.txt" | xargs rm -f

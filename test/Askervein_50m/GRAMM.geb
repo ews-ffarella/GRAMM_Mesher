@@ -1,0 +1,7 @@
+200                 !Number of cells in x-direction
+300                 !Number of cells in y-direction
+29                  !Mumber of cells in z-direction
+71000.0             !West border of GRAMM model domain [m]
+81000.0             !East border of GRAMM model domain [m]
+813000.0            !South border of GRAMM model domain [m]
+828000.0            !North border of GRAMM model domain [m]

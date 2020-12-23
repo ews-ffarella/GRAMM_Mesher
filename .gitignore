@@ -5,6 +5,8 @@ test/**/*.wnd
 test/**/ggeom.*
 test/**/landuse.asc
 test/**/albeq.dat
+test/**/ggeom*.txt
+test/**/clc.txt
 test/**/albedo.txt
 test/**/conductivity.txt
 test/**/density.txt
