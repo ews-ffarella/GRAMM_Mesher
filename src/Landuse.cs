@@ -705,9 +705,9 @@ namespace Mesh
                             _ALBEDO = CreateArray<double[]>(_NX + 1, () => new double[_NY + 1]);
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             int n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _RHOB[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -715,9 +715,9 @@ namespace Mesh
                             }
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _ALAMBDA[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -725,9 +725,9 @@ namespace Mesh
                             }
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _Z0[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -735,9 +735,9 @@ namespace Mesh
                             }
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _FW[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -745,9 +745,9 @@ namespace Mesh
                             }
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _EPSG[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -755,9 +755,9 @@ namespace Mesh
                             }
                             text = Convert.ToString(r.ReadLine()).Split(new char[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
                             n = 0;
-                            for (int j = 1; j < _NY + 1; j++)
+                            for (int j = 0; j < _NY; j++)
                             {
-                                for (int i = 1; i < _NX + 1; i++)
+                                for (int i = 0; i < _NX; i++)
                                 {
                                     _ALBEDO[i][j] = Convert.ToDouble(text[n].Replace(".", decsep));
                                     n++;
@@ -784,49 +784,49 @@ namespace Mesh
             try
             {
                 StreamWriter writer = new StreamWriter("landuse.asc");
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_RHOB[i][j], 0), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_ALAMBDA[i][j], 3), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_Z0[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_FW[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_EPSG[i][j], 4), ic) + " ");
                     }
                 }
                 writer.WriteLine();
-                for (int j = 1; j < _NY + 1; j++)
+                for (int j = 0; j < _NY; j++)
                 {
-                    for (int i = 1; i < _NX + 1; i++)
+                    for (int i = 0; i < _NX; i++)
                     {
                         writer.Write(Convert.ToString(Math.Round(_ALBEDO[i][j], 3), ic) + " ");
                     }

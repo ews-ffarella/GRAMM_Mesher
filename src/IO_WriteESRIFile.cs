@@ -92,10 +92,10 @@ namespace Mesh
                     }
 
                     StringBuilder SB = new StringBuilder();
-                    for (int j = _nrows; j > 0; j--)
+                    for (int j = _nrows - 1; j >= 0; j--)
                     {
                         SB.Clear();
-                        for (int i = 1; i < _ncols + 1; i++)
+                        for (int i = 0; i < _ncols; i++)
                         {
                             SB.Append(Math.Round(DblArr[i][j], _round).ToString(ic));
                             SB.Append(" ");
@@ -153,10 +153,10 @@ namespace Mesh
                     }
 
                     StringBuilder SB = new StringBuilder();
-                    for (int j = _nrows; j > 0; j--)
+                    for (int j = _nrows - 1; j >= 0; j--)
                     {
                         SB.Clear();
-                        for (int i = 1; i < _ncols + 1; i++)
+                        for (int i = 0; i < _ncols; i++)
                         {
                             SB.Append(IntArr[i][j].ToString(ic));
                             SB.Append(" ");
